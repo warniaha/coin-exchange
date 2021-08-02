@@ -20,8 +20,8 @@ export default function CoinList (props) {
                     props.coinData.map( value => 
                         <Coin key={value.key} id={value.key}
                         showBalance={props.showBalance}
-                        handleRefresh={props.handleRefresh} 
-                        {...value} />
+                        handleAction={props.handleAction} 
+                            {...value} />
                     )
                 }
             </tbody>

@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import React from 'react'
 import styled from 'styled-components';
+import { ActionType } from '../ActionType';
 import './AccountBalance.css';
 
 const Section = styled.section`
@@ -11,10 +12,10 @@ const Section = styled.section`
 export default function AccountBalance (props) {
     const handleClick = (event) => {
         event.preventDefault();
-        props.showHideBalance(!props.showBalance);
+        props.handleAction(ActionType.ToggleBalance, !props.showBalance);
     }
     const buttonText = props.showBalance ? 'Hide Balance' : 'Show Balance';
-    const balanceText = props.showBalance ? "Balance: $" + props.amount : "";
+    const balanceText = props.showBalance ? "Net Balance: $" + props.amount : "";
     return (
         <Section className="balance">
             {balanceText}
