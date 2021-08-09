@@ -2,16 +2,15 @@ import React from 'react'
 import Coin from '../Coin/Coin'
 
 export default function CoinList (props) {
-    const balanceText = props.showBalance ? <th>Balance</th> : <></>;
     return (
         <div>
-            <table className="coin-table">
+            <table className="table table-primary table-borders">
             <thead>
                 <tr>
                 <th>Name</th>
                 <th>Ticker</th>
                 <th>Price</th>
-                {balanceText}
+                <th>Balance</th>
                 <th>Actions</th>
                 </tr>
             </thead>

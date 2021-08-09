@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import logo from './logo.svg'
+import logo from './money.gif'
 import './ExchangeHeader.css';
 
 export default class ExchangeHeader extends Component {

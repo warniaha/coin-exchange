@@ -15,11 +15,13 @@ export default function AccountBalance (props) {
         props.handleAction(ActionType.ToggleBalance, !props.showBalance);
     }
     const buttonText = props.showBalance ? 'Hide Balance' : 'Show Balance';
+    const buttonClass = 'btn ' + (props.showBalance ? 'btn-warning' : 'btn-info');
     const balanceText = props.showBalance ? "Net Balance: $" + props.amount : "";
     return (
         <Section className="balance">
             {balanceText}
-            <button className="showHideBalance" onClick={handleClick} >{buttonText}</button>
+            <button 
+                className={buttonClass} onClick={handleClick} >{buttonText}</button>
         </Section>
     );
 }

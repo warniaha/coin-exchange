@@ -26,19 +26,19 @@ export default function Coin (props) {
         event.preventDefault();
         props.handleAction(ActionType.SellAll, props.id);
     }
-    const balanceText = (props.showBalance ? <Td>${props.balance}</Td> : <></>);
+    const balanceText = props.showBalance ? '$' + props.balance : '-';
     return (
         <tr className="coin-row">
             <Td>{props.name}</Td>
             <Td>{props.ticker}</Td>
             <Td>${props.price}</Td>
-            {balanceText}
+            <Td>{balanceText}</Td>
             <Td>
                 <form action="#" method="POST">
-                    <button onClick={handleRefresh}>Refresh</button>
-                    <button onClick={handleBuyMore}>Buy more</button>
-                    <button onClick={handleSellSome}>Sell some</button>
-                    <button onClick={handleSellAll}>Sell all</button>
+                    <button className="btn btn-info" onClick={handleRefresh}>Refresh</button>
+                    <button className="btn btn-success" onClick={handleBuyMore}>Buy</button>
+                    <button className="btn btn-danger" onClick={handleSellSome}>Sell</button>
+                    {/* <button className="btn btn-danger" onClick={handleSellAll}>Sell all</button> */}
                 </form>
             </Td>
         </tr>
