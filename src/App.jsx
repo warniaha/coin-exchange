@@ -4,15 +4,12 @@ import CoinList from './components/CoinList/CoinList';
 import ExchangeHeader from './components/ExchangeHeader/ExchangeHeader';
 import CashAvailable from './components/CashAvailable/CashAvailable';
 import BuyMoreDialog from './components/BuyMoreDialog/BuyMoreDialog';
-//import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootswatch/dist/flatly/bootstrap.min.css';
 
 import React from 'react';
 // import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { ActionType } from './components/ActionType';
-
-import { Modal, Button } from 'react-bootstrap';
 
 const COIN_COUNT = 10;
 
@@ -21,12 +18,13 @@ const formatPrice = (price) => {
 }
 
 function App(props) {
-  const[balance, setBalance] = React.useState(0);
-  const[cashAvailable, setCashAvailable] = React.useState(0);
-  const[showBalance, setShowBalance] = React.useState(false);
-  const[coinData, setCoinData] = React.useState([]);
-  const[isBuyMoreDialogOpen, setBuyMoreDialogOpen] = React.useState(false);
-  const[changeCoin, setChangeCoin] = React.useState(null);
+  const [balance, setBalance] = React.useState(0);
+  const [cashAvailable, setCashAvailable] = React.useState(0);
+  const [showBalance, setShowBalance] = React.useState(false);
+  const [coinData, setCoinData] = React.useState([]);
+  const [isBuyMoreDialogOpen, setBuyMoreDialogOpen] = React.useState(false);
+  const [changeCoin, setChangeCoin] = React.useState(null);
+  const [purchaseAmount, setPurchaseAmount] = React.useState(0);
   
   const handleClose = () => setBuyMoreDialogOpen(false);
   const handleShow = () => setBuyMoreDialogOpen(true);
@@ -74,10 +72,12 @@ function App(props) {
   }
   
   const handleBuyMore = async (valueChangeTicker) => {
-    setBuyMoreDialogOpen(true);
     console.log(`handleBuyMore ${valueChangeTicker}`);
     const changeCoin = coinData.find(coin => valueChangeTicker === coin.key);
     setChangeCoin(changeCoin);
+    setPurchaseAmount(0);
+    setBuyMoreDialogOpen(true);
+    console.log(`handleBuyMore end ${valueChangeTicker}`);
   }
 
   const handleSellSome = async (valueChangeTicker) => {
@@ -150,6 +150,8 @@ function App(props) {
       <BuyMoreDialog show={isBuyMoreDialogOpen} 
         cashAvailable={cashAvailable} 
         changeCoin={changeCoin}
+        purchaseAmount={purchaseAmount}
+        setPurchaseAmount={setPurchaseAmount}
         handleClose={closeBuyMoreDialog}/>
     </div>
   );
