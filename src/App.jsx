@@ -3,7 +3,7 @@ import AccountBalance from './components/AccountBalance/AccountBalance';
 import CoinList from './components/CoinList/CoinList';
 import ExchangeHeader from './components/ExchangeHeader/ExchangeHeader';
 import CashAvailable from './components/CashAvailable/CashAvailable';
-import BuyMoreDialog from './components/BuyMoreDialog/BuyMoreDialog';
+import BuySellDialog from './components/BuySellDialog/BuySellDialog';
 //import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootswatch/dist/flatly/bootstrap.min.css';
 
@@ -25,15 +25,13 @@ function App(props) {
   const[cashAvailable, setCashAvailable] = React.useState(0);
   const[showBalance, setShowBalance] = React.useState(false);
   const[coinData, setCoinData] = React.useState([]);
-  const[isBuyMoreDialogOpen, setBuyMoreDialogOpen] = React.useState(false);
+  const[isBuyDialogOpen, setBuyDialogOpen] = React.useState(false);
   const[changeCoin, setChangeCoin] = React.useState(null);
-  
-  const handleClose = () => setBuyMoreDialogOpen(false);
-  const handleShow = () => setBuyMoreDialogOpen(true);
+  const[initialValue, setInitialValue] = React.useState(0);
 
-  const closeBuyMoreDialog = () => {
-    console.log('closeBuyMoreDialog');
-    setBuyMoreDialogOpen(false);
+  const closeBuyDialog = () => {
+    console.log('closeBuyDialog');
+    setBuyDialogOpen(false);
   }
 
   const componentDidMount = async () => {
@@ -74,18 +72,21 @@ function App(props) {
   }
   
   const handleBuyMore = async (valueChangeTicker) => {
-    setBuyMoreDialogOpen(true);
-    console.log(`handleBuyMore ${valueChangeTicker}`);
     const changeCoin = coinData.find(coin => valueChangeTicker === coin.key);
     setChangeCoin(changeCoin);
+    // setup modal
+    setActionTitle('Buy');
+    setModalTitle(`Buy ${changeCoin.ticker}`);
+    setInputTitle(`Spend cash available to purchase ${changeCoin.ticker}`);
+    setAvailability('Cash Available');
+    setInitialValue(0);
+    setModalStatusMessage(mustBeGreaterThanZero);
+    setModalTextFieldStatus(false);
+    setBuyDialogOpen(true);
   }
 
   const handleSellSome = async (valueChangeTicker) => {
     console.log(`handleSellSome ${valueChangeTicker}`);
-  }
-
-  const handleSellAll = async (valueChangeTicker) => {
-    console.log(`handleSellAll ${valueChangeTicker}`);
   }
 
   const handleBuyNew = async (valueChangeTicker) => {
@@ -116,9 +117,6 @@ function App(props) {
       case ActionType.SellSome:
         handleSellSome(actionParameter);
         break;
-      case ActionType.SellAll:
-        handleSellAll(actionParameter);
-        break;
       case ActionType.ToggleBalance:
         toggleBalance(actionParameter);
         break;
@@ -135,6 +133,33 @@ function App(props) {
         throw 'Unexpected action type';
     }
   }
+
+  const mustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
+  const [modalStatusMessage, setModalStatusMessage] = React.useState(mustBeGreaterThanZero);
+  const [modalTextFieldStatus, setModalTextFieldStatus] = React.useState(false);
+  const [modalTitle, setModalTitle] = React.useState("");
+  const [inputTitle, setInputTitle] = React.useState("");
+  const [actionTitle, setActionTitle] = React.useState("");
+  const [availability, setAvailability] = React.useState("");
+
+  const onModalBuyValidator = (value) => {
+      const amount = (value === undefined ? 0 : Number(value));
+      console.log(`onModalBuyValidator: ${amount}`);
+      if (amount <= 0) {
+          setModalStatusMessage(mustBeGreaterThanZero);
+          setModalTextFieldStatus(false);
+      }
+      else if (amount > cashAvailable) {
+          setModalStatusMessage('Amount to purchase exceeds cash available');
+          setModalTextFieldStatus(false);
+      }
+      else {
+          const shares = amount / changeCoin.price;
+          setModalStatusMessage(`Purchase ${shares} of ${changeCoin.ticker}`);
+          setModalTextFieldStatus(true);
+      }
+  }
+
   return (
     <div className="App">
       <ExchangeHeader />
@@ -147,10 +172,18 @@ function App(props) {
       <CoinList coinData={coinData} 
         showBalance={showBalance} 
         handleAction={handleAction} />
-      <BuyMoreDialog show={isBuyMoreDialogOpen} 
-        cashAvailable={cashAvailable} 
+      <BuySellDialog show={isBuyDialogOpen} 
+        cashSharesAvailable={cashAvailable} 
         changeCoin={changeCoin}
-        handleClose={closeBuyMoreDialog}/>
+        initialValue={initialValue}
+        modalStatusMessage={modalStatusMessage}
+        modalTextFieldStatus={modalTextFieldStatus}
+        onValidator={onModalBuyValidator}
+        modalTitle={modalTitle}
+        inputTitle={inputTitle}
+        actionTitle={actionTitle}
+        availability={availability}
+        handleClose={closeBuyDialog}/>
     </div>
   );
 }

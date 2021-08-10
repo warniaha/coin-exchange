@@ -22,10 +22,6 @@ export default function Coin (props) {
         event.preventDefault();
         props.handleAction(ActionType.SellSome, props.id);
     }
-    const handleSellAll = (event) => {
-        event.preventDefault();
-        props.handleAction(ActionType.SellAll, props.id);
-    }
     const balanceText = props.showBalance ? '$' + props.balance : '-';
     return (
         <tr className="coin-row">
@@ -38,7 +34,6 @@ export default function Coin (props) {
                     <button className="btn btn-info" onClick={handleRefresh}>Refresh</button>
                     <button className="btn btn-success" onClick={handleBuyMore}>Buy</button>
                     <button className="btn btn-danger" onClick={handleSellSome}>Sell</button>
-                    {/* <button className="btn btn-danger" onClick={handleSellAll}>Sell all</button> */}
                 </form>
             </Td>
         </tr>
