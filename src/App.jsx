@@ -160,7 +160,6 @@ function App(props) {
     console.log(`selectCoin.symbol: ${symbol.target.value}`);
     var changeCoin = coinData.find(coin => symbol.target.value === coin.symbol);
     if (changeCoin === undefined) {
-      debugger;
       console.log(`selectCoin: ${symbol.target.value} was not found, need to find it from the coinList`);
       const newCoin = coinList.find(coin => symbol.target.value === coin.symbol);
       console.log(newCoin);
