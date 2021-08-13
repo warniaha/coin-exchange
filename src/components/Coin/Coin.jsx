@@ -22,7 +22,7 @@ export default function Coin (props) {
         event.preventDefault();
         props.handleAction(ActionType.SellSome, props.id);
     }
-    const balanceText = props.showBalance ? '$' + props.balance : '-';
+    const balanceText = props.showBalance ? '$' + (props.shares * props.price) : '-';
     return (
         <tr className="coin-row">
             <Td>{props.name}</Td>

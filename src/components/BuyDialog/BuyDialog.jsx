@@ -1,10 +1,12 @@
-import React, { Component } from 'react'
+import React from 'react'
 import { Modal, Button, Table } from 'react-bootstrap';
 import CurrencyInput from 'react-currency-input-field';
+import { ActionType } from '../ActionType';
 
-export default function BuySellDialog(props) {
-    const onBuy = (event) => {
-        console.log('buy: ', event);
+export default function BuyDialog(props) {
+    const onBuy = (quantity) => {
+        props.handleAction(ActionType.BuyShares, { id: props.changeCoin.id, shares: quantity})
+        console.log('buy: ', quantity);
     }
 
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
@@ -54,7 +56,7 @@ export default function BuySellDialog(props) {
                     decimalsLimit={18}
                     allowNegativeValue="false"
                     defaultValue={props.initialValue}
-                    prefix="$"
+                    prefix={props.prefix}
                     intlConfig={{ locale: 'en-US', currency: 'USD' }}
                     onValueChange={(changedText) => props.onValidator(changedText)}
                 />
