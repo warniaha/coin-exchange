@@ -2,6 +2,16 @@ import React from 'react'
 import Coin from '../Coin/Coin'
 
 export default function CoinList (props) {
+    const coinBalances = () => {
+        if (props.coinBalance) {
+            props.coinBalance.map( value => 
+                <Coin key={value.key} id={value.key}
+                showBalance={props.showBalance}
+                handleAction={props.handleAction} 
+                    {...value} />
+            )
+        }
+    }
     return (
         <div>
             <table className="table table-primary table-borders">
@@ -15,14 +25,7 @@ export default function CoinList (props) {
                 </tr>
             </thead>
             <tbody>
-                {
-                    props.coinData.map( value => 
-                        <Coin key={value.key} id={value.key}
-                        showBalance={props.showBalance}
-                        handleAction={props.handleAction} 
-                            {...value} />
-                    )
-                }
+                {coinBalances()}
             </tbody>
             </table>
         </div>

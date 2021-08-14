@@ -39,7 +39,7 @@ function App(props) {
   const[balance, setBalance] = React.useState(0);
   const[cashAvailable, setCashAvailable] = React.useState(0);
   const[showBalance, setShowBalance] = React.useState(false);
-  const[coinData, setCoinData] = React.useState([]);
+  const[coinBalance, setCoinBalance] = React.useState([]);
   const[isBuyDialogOpen, setBuyDialogOpen] = React.useState(false);
   const[isSellDialogOpen, setSellDialogOpen] = React.useState(false);
   const[isBuyNewDialogOpen, setBuyNewDialogOpen] = React.useState(false);
@@ -61,7 +61,7 @@ function App(props) {
     setBalance(0);
   }
 
-  // create coinData from CoinList element
+  // create coinBalance from CoinList element
   const createCoinData = (coin) => {
     return {
       key: coin.id,
@@ -83,7 +83,6 @@ function App(props) {
       });
       if (listResponse !== undefined) {
         setCoinList(uniqByKeepFirst(listResponse.data, key => key.symbol));
-        saveCoinList(listResponse.data);
         return listResponse.data;
       }
     }
@@ -97,18 +96,9 @@ function App(props) {
 
   const componentDidMount = async () => {
     console.log(`componentDidMount called`);
-    const coins = await getCoinList();
-    if (coins !== undefined) {
-      const coinIds = coins.slice(0, COIN_COUNT).map(coin => coin.id);
-      const promises = coinIds.map(id => axios.get(`https://api.coinpaprika.com/v1/tickers/${id}`));
-      const coinData = await Promise.all(promises);
-      const coinPriceData = coinData.map((response) => {
-        return createCoinData(response.data);
-      });
-      console.log(`componentDidMount saving coin data`);
-      setCoinData(coinPriceData);
-      calculateBalance();
-    }
+    await getCoinList();
+    readCoinBalance();
+    calculateBalance();
   }
 
   // how to read/write to localstorage: https://jsonworld.com/demo/how-to-use-localStorage-with-reactjs
@@ -123,8 +113,27 @@ function App(props) {
     return coins;
   }
 
+  const coinBalanceFilename = 'PaperCoinBalance';
+  const saveCoinBalance = (values) => {
+    const balances = values.map(coin => {
+      return (coin.balance > 0) ? coin : null;
+    })
+    console.log(`balances: ${balances}`);
+    localStorage.setItem(coinBalanceFilename, JSON.stringify(balances));
+  }
+  const readCoinBalance = () => {
+    const balances = JSON.parse(localStorage.getItem(coinBalanceFilename));
+    if (balances === null || balances.length === 0)
+      return undefined;
+    if (balances.length === 1 && balances[0] === null )
+      return undefined;
+    console.log(balances);
+    setCoinBalance(balances);
+    return balances;
+  }
+
   React.useEffect(() => {
-    if (coinData.length === 0) {
+    if (coinBalance === undefined || coinBalance.length === 0) {
       componentDidMount();
     }
   })
@@ -143,7 +152,7 @@ function App(props) {
   }
   
   const handleBuyMore = async (valueChangeTicker) => {
-    const changeCoin = coinData.find(coin => valueChangeTicker === coin.key);
+    const changeCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
     setChangeCoin(changeCoin);
     // setup modal
     setActionTitle('Buy');
@@ -158,20 +167,20 @@ function App(props) {
 
   const selectCoin = (symbol) => {
     console.log(`selectCoin.symbol: ${symbol.target.value}`);
-    var changeCoin = coinData.find(coin => symbol.target.value === coin.symbol);
+    var changeCoin = coinBalance.find(coin => symbol.target.value === coin.symbol);
     if (changeCoin === undefined) {
       console.log(`selectCoin: ${symbol.target.value} was not found, need to find it from the coinList`);
       const newCoin = coinList.find(coin => symbol.target.value === coin.symbol);
       console.log(newCoin);
       updateTickerPrice(newCoin.id);
-      changeCoin = coinData.find(coin => symbol.target.value === coin.ticker);
+      changeCoin = coinBalance.find(coin => symbol.target.value === coin.ticker);
     }
     console.log(`selectCoin.changeCoin: ${changeCoin}`);
     setChangeCoin(changeCoin);
   }
 
   const handleSellSome = async (valueChangeTicker) => {
-    const changeCoin = coinData.find(coin => valueChangeTicker === coin.key);
+    const changeCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
     setChangeCoin(changeCoin);
     // setup modal
     setActionTitle('Sell');
@@ -200,25 +209,24 @@ function App(props) {
   const updateTickerPrice = async (valueChangeTicker) => {
     const response = await axios.get(`https://api.coinpaprika.com/v1/tickers/${valueChangeTicker}`);
     const newPrice = formatPrice(response.data.quotes.USD.price);
-    const foundCoin = coinData.find(coin => valueChangeTicker === coin.key);
+    const foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
     if (foundCoin === undefined) {
       const foundCoin = createCoinData(response.data);
-      const newList = [...coinData];
-      console.log(`coinData List ${coinData}`);
+      const newList = [...coinBalance];
       newList.push(foundCoin);
-      setCoinData(newList);
-      console.log(`Added coin ${foundCoin}`);
-      console.log(`newList List ${newList}`);
+      setCoinBalance(newList);
+      saveCoinBalance(newList);
     }
     else {
-      const newCoinData = coinData.map( function( values ) {
+      const newCoinData = coinBalance.map( function( values ) {
         let newValues = {...values};
         if (valueChangeTicker === values.key) {
           newValues.price = newPrice;
         }
         return newValues;
       });
-      setCoinData(newCoinData);
+      setCoinBalance(newCoinData);
+      saveCoinBalance(newCoinData);
     }
   }
 
@@ -268,34 +276,34 @@ function App(props) {
   const onModalSellValidator = (value) => {
     const amount = (value === undefined ? 0 : Number(value));
     if (amount <= 0) {
-        setModalStatusMessage(sellMustBeGreaterThanZero);
-        setModalTextFieldStatus(false);
+      setModalStatusMessage(sellMustBeGreaterThanZero);
+      setModalTextFieldStatus(false);
     }
     else if (amount > changeCoin.shares) {
-        setModalStatusMessage('Amount to sell exceeds shares available');
-        setModalTextFieldStatus(false);
+      setModalStatusMessage('Amount to sell exceeds shares available');
+      setModalTextFieldStatus(false);
     }
     else {
-        const shares = amount * changeCoin.price;
-        setModalStatusMessage(`Receive $${shares} for selling ${changeCoin.ticker}`);
-        setModalTextFieldStatus(true);
+      const shares = amount * changeCoin.price;
+      setModalStatusMessage(`Receive $${shares} for selling ${changeCoin.ticker}`);
+      setModalTextFieldStatus(true);
     }
   }
   const onModalBuyValidator = (value) => {
-      const amount = (value === undefined ? 0 : Number(value));
-      if (amount <= 0) {
-          setModalStatusMessage(buyMustBeGreaterThanZero);
-          setModalTextFieldStatus(false);
-      }
-      else if (amount > cashAvailable) {
-          setModalStatusMessage('Amount to purchase exceeds cash available');
-          setModalTextFieldStatus(false);
-      }
-      else {
-          const shares = amount / changeCoin.price;
-          setModalStatusMessage(`Purchase ${shares} of ${changeCoin.ticker}`);
-          setModalTextFieldStatus(true);
-      }
+    const amount = (value === undefined ? 0 : Number(value));
+    if (amount <= 0) {
+      setModalStatusMessage(buyMustBeGreaterThanZero);
+      setModalTextFieldStatus(false);
+    }
+    else if (amount > cashAvailable) {
+      setModalStatusMessage('Amount to purchase exceeds cash available');
+      setModalTextFieldStatus(false);
+    }
+    else {
+      const shares = amount / changeCoin.price;
+      setModalStatusMessage(`Purchase ${shares} of ${changeCoin.ticker}`);
+      setModalTextFieldStatus(true);
+    }
   }
 
   return (
@@ -307,7 +315,7 @@ function App(props) {
       <CashAvailable handleAction={handleAction}
         showBalance={showBalance}
         amount={cashAvailable} />
-      <CoinList coinData={coinData} 
+      <CoinList coinBalance={coinBalance} 
         showBalance={showBalance} 
         handleAction={handleAction} />
       <BuyDialog show={isBuyDialogOpen} 
