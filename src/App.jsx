@@ -8,31 +8,28 @@ import BuyNewDialog from './components/BuyNewDialog/BuyNewDialog';
 import SellDialog from './components/SellDialog/SellDialog';
 //import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootswatch/dist/flatly/bootstrap.min.css';
-
+import { formatPrice } from './functions/formatPrice'
 import React from 'react';
 // import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { ActionType } from './components/ActionType';
 
-const COIN_COUNT = 10;
-
-const formatPrice = (price) => {
-  return parseFloat(Number(price).toFixed(4));
-}
-
 // copied from https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array
 function uniqByKeepFirst(list, key) {
   var keys = new Set();
-  return list.filter(item => {
-    const itemKey = key(item)
-    if (keys.has(itemKey)) {
-      return false; // key was already added
-    }
-    else {
-      keys.add(itemKey);  // add the key to the set
-      return item;
-    }
-  });
+  if (list) {
+    return list.filter(item => {
+      const itemKey = key(item)
+      if (keys.has(itemKey)) {
+        return false; // key was already added
+      }
+      else {
+        keys.add(itemKey);  // add the key to the set
+        return item;
+      }
+    });
+  }
+  return list;
 }
 
 function App(props) {
@@ -45,7 +42,8 @@ function App(props) {
   const[isBuyNewDialogOpen, setBuyNewDialogOpen] = React.useState(false);
   const[changeCoin, setChangeCoin] = React.useState(null);
   const[initialValue, setInitialValue] = React.useState(0);
-  const[coinList, setCoinList] = React.useState();
+  const[coinTicker, setCoinTicker] = React.useState();
+  const[quantity, setQuantity] = React.useState(0);
 
   const closeBuyDialog = () => {
     setBuyDialogOpen(false);
@@ -71,19 +69,33 @@ function App(props) {
       price: formatPrice(coin.quotes['USD'].price),
     }
   }
+  const createCoinTicker = (coin) => {
+    return {
+      key: coin.id,
+      name: coin.name,
+      ticker: coin.symbol,
+      price: coin.quotes['USD'].price,
+      last_updated: coin.last_updated,
+    }
+  }
 
   const getCoinList = async () => {
-    if (coinList === undefined) {
+    if (coinTicker === undefined) {
       console.log(`getCoinList getting token list`);
-      const listResponse = await axios.get('https://api.coinpaprika.com/v1/coins').catch(function(error) {
+      const listResponse = await axios.get('https://api.coinpaprika.com/v1/tickers').catch(function(error) {
         debugger;
         console.log(error);
         console.log(`getCoinList reading old file from computer`);
         return readCoinList();
       });
       if (listResponse !== undefined) {
-        setCoinList(uniqByKeepFirst(listResponse.data, key => key.symbol));
-        return listResponse.data;
+        const tickers = uniqByKeepFirst(listResponse.data, key => key.symbol);
+        const tickerMap = tickers.map(coin => {
+          return createCoinTicker(coin);
+        })
+        setCoinTicker(tickerMap);
+        saveCoinList(tickerMap);
+        return tickerMap;
       }
     }
     return undefined;
@@ -95,7 +107,6 @@ function App(props) {
 }
 
   const componentDidMount = async () => {
-    console.log(`componentDidMount called`);
     await getCoinList();
     readCoinBalance();
     calculateBalance();
@@ -109,7 +120,7 @@ function App(props) {
   const readCoinList = () => {
     const coins = JSON.parse(localStorage.getItem(coinListFilename));
     console.log(coins);
-    setCoinList(coins);
+    setCoinTicker(coins);
     return coins;
   }
 
@@ -164,19 +175,27 @@ function App(props) {
     setModalTextFieldStatus(false);
     setBuyDialogOpen(true);
   }
-
-  const selectCoin = (symbol) => {
-    console.log(`selectCoin.symbol: ${symbol.target.value}`);
-    var changeCoin = coinBalance.find(coin => symbol.target.value === coin.symbol);
-    if (changeCoin === undefined) {
-      console.log(`selectCoin: ${symbol.target.value} was not found, need to find it from the coinList`);
-      const newCoin = coinList.find(coin => symbol.target.value === coin.symbol);
-      console.log(newCoin);
-      updateTickerPrice(newCoin.id);
-      changeCoin = coinBalance.find(coin => symbol.target.value === coin.ticker);
+  const updateModalTitles = (currentCoin) => {
+    if (currentCoin) {
+      setModalTitle(`Buy ${currentCoin.ticker}`);
+      setInputTitle(`Spend cash available to purchase ${currentCoin.ticker}`);
     }
-    console.log(`selectCoin.changeCoin: ${changeCoin}`);
-    setChangeCoin(changeCoin);
+    else {
+      setModalTitle(`Buy coins`);
+      setInputTitle(`Spend cash available to purchase coins`);
+    }
+  }
+  const selectCoin = (symbol) => {
+    var currentCoin = coinBalance.find(coin => symbol === coin.ticker);
+    console.log(`selectCoin.symbol: ${symbol}`);
+    if (currentCoin === undefined) {
+      console.log(`selectCoin: ${symbol} was not found, need to find it from the coinTicker`);
+      currentCoin = coinTicker.find(coin => symbol === coin.ticker);
+      console.log(currentCoin);
+    }
+    updateModalTitles(currentCoin);
+    setChangeCoin(currentCoin);
+    return currentCoin;
   }
 
   const handleSellSome = async (valueChangeTicker) => {
@@ -258,12 +277,18 @@ function App(props) {
         handleBuyNew();
         break;
       case ActionType.BuyShares:
+        console.log(`BuyShares actionParameter: ${JSON.stringify(actionParameter)}`);
+        buyShares(actionParameter.key, actionParameter.quantity);
         break;
       default:
         throw Object.assign(new Error(`Unexpected action type: ${action}`), { code: 402 });
     }
   }
-
+  const buyShares = (key, quantity) => {
+    // reduce the cach available by quantity of USD
+    // add to the coinBalance of that coin (adding to the list if needed)
+    throw Object.assign(new Error(`buyShares not coded yet: ${key} ${quantity}`), { code: 402 });
+  }
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
   const sellMustBeGreaterThanZero = 'Number of shares to sell must be greater than zero';
   const [modalStatusMessage, setModalStatusMessage] = React.useState("");
@@ -289,7 +314,10 @@ function App(props) {
       setModalTextFieldStatus(true);
     }
   }
-  const onModalBuyValidator = (value) => {
+  const onModalBuyValidator = (valueCoin) => {
+    const value = valueCoin.quantity;
+    const coin = valueCoin.coin;
+    setQuantity(value);
     const amount = (value === undefined ? 0 : Number(value));
     if (amount <= 0) {
       setModalStatusMessage(buyMustBeGreaterThanZero);
@@ -300,10 +328,11 @@ function App(props) {
       setModalTextFieldStatus(false);
     }
     else {
-      const shares = amount / changeCoin.price;
-      setModalStatusMessage(`Purchase ${shares} of ${changeCoin.ticker}`);
+      const shares = amount / coin.price;
+      setModalStatusMessage(`Purchase ${shares} of ${coin.ticker}`);
       setModalTextFieldStatus(true);
     }
+    updateModalTitles(coin);
   }
 
   return (
@@ -347,7 +376,8 @@ function App(props) {
         handleClose={closeSellDialog}/>
       <BuyNewDialog show={isBuyNewDialogOpen}
         cashSharesAvailable={cashAvailable} 
-        coinList={coinList}
+        coinTicker={coinTicker}
+        changeCoin={changeCoin}
         modalStatusMessage={modalStatusMessage}
         modalTextFieldStatus={modalTextFieldStatus}
         onValidator={onModalBuyValidator}
@@ -356,6 +386,7 @@ function App(props) {
         actionTitle={actionTitle}
         availability={availability}
         selectCoin={selectCoin}
+        quantity={quantity}
         handleAction={handleAction}
         handleClose={closeBuyNewDialog}/>
     </div>

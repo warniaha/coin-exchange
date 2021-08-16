@@ -3,11 +3,12 @@ import { Modal, Button, Table } from 'react-bootstrap';
 import CurrencyInput from 'react-currency-input-field';
 import { ActionType } from '../ActionType';
 import './BuyNewDialog.css';
+import { formatPrice } from '../../functions/formatPrice'
+//import Select from 'react-select';
 
 export default function BuyNewDialog(props) {
-    const onBuy = (quantity) => {
-        props.handleAction(ActionType.BuyShares, { id: props.changeCoin.id, shares: quantity})
-        console.log('buy: ', quantity);
+    const onBuy = (buttonAction) => {
+        props.handleAction(ActionType.BuyShares, { key: props.changeCoin.key, shares: props.quantity})
     }
     const onFilterList = (text) => {
         setFilter(text);
@@ -15,25 +16,45 @@ export default function BuyNewDialog(props) {
     const handleCancel = () => {
         props.handleClose();
     }
+    const callValidator = (quantity, coin) => {
+        props.onValidator({quantity: quantity, coin: coin});
+    }
+    const onValidator = (value) => {
+        callValidator(value, props.changeCoin);
+    }
+    const selectCoin = (ticker) => {
+        const currentCoin = props.selectCoin(ticker.target.value);
+        callValidator(props.quantity, currentCoin);
+    }
     const filterCoins = (filter) => {
-        if (props.coinList !== undefined && props.show === true) {
-            const mapData = props.coinList.map (coin => {
-                if (filter.length === 0 || coin.symbol.toLowerCase().includes(filter.toLowerCase())) {
-                    // console.log(`<option key=${coin.symbol} value=${coin.symbol} >${coin.symbol}</option>`)
-                    return <option key={coin.symbol} value={coin.symbol} >{coin.symbol}</option>
+        if (props.coinTicker !== undefined && props.show === true) {
+            const mapData = props.coinTicker.map (coin => {
+                if (filter.length === 0 || coin.ticker.toLowerCase().includes(filter.toLowerCase())) {
+                    if (props.changeCoin && coin.ticker === props.changeCoin.ticker){
+                    }
+                    // console.log(`<option key=${coin.ticker} value=${coin.ticker} >${coin.ticker}</option>`)
+                    return <option key={coin.ticker} value={coin.ticker}  >{coin.ticker}</option>
                 }
                 return null;
             });
+            // console.log(`<option key="null" value="" />`);
+            mapData.unshift(<option key="null" value="" />);
             return mapData;
         }
         return null;
     }
+    if (props.changeCoin)
+        console.log(`changeCoin: ${props.changeCoin.ticker}`);
+    else
+        console.log(`changeCoin: ${props.changeCoin}`);
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
-    const price = props.changeCoin ? props.changeCoin.price : "";
+    const price = props.changeCoin ? formatPrice(props.changeCoin.price) : "";
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
     const inputClass = (props.modalTextFieldStatus ? "form-control is-valid" : "form-control is-invalid");
     const feedbackClass = (props.modalTextFieldStatus ? "valid-feedback" : "invalid-feedback");
     const [filter, setFilter] = React.useState("");
+    const currencyInputEnabled = props.changeCoin ? true : false;
+    const selectedCoin = props.changeCoin ? props.changeCoin.ticker : "";
     return (
         <Modal
             show={props.show}
@@ -57,7 +78,11 @@ export default function BuyNewDialog(props) {
                         />
                     </div>
                 </div>
-                <select className="form-select" id="filter-select" onChange={props.selectCoin}>
+                <select className="form-select" 
+                    id="filter-select" 
+                    onChange={selectCoin}
+                    value={selectedCoin}
+                    placeholder="Select ticker name...">
                     {filterCoins(filter)}
                 </select>
                 <br/>
@@ -87,9 +112,10 @@ export default function BuyNewDialog(props) {
                         decimalsLimit={18}
                         allowNegativeValue="false"
                         defaultValue={props.initialValue}
+                        disabled={!currencyInputEnabled}
                         prefix={props.prefix}
                         intlConfig={{ locale: 'en-US', currency: 'USD' }}
-                        onValueChange={(changedText) => props.onValidator(changedText)}
+                        onValueChange={(changedText) => onValidator(changedText)}
                     />
                     <div className={feedbackClass}>{props.modalStatusMessage}</div>
                 </div>
