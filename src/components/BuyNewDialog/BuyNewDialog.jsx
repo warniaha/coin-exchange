@@ -12,6 +12,19 @@ export default function BuyNewDialog(props) {
     }
     const onFilterList = (text) => {
         setFilter(text);
+        var mapData = props.coinTicker.map (coin => {
+            if (filter.length === 0 || coin.ticker.toLowerCase().includes(text.toLowerCase())) {
+                return coin;
+            }
+            return null;
+        });
+        mapData = mapData.filter(Boolean);
+        const selectedCoin = props.changeCoin ? props.changeCoin.ticker : "";
+        // if the filter erases the selection, pick one of the remaining coins
+        const foundList = mapData.find((coin) => coin && selectedCoin === coin.ticker);
+        if (!foundList && mapData.length > 0) {
+            selectCoin(mapData[0].ticker);
+        }
     }
     const handleCancel = () => {
         props.handleClose();
@@ -22,8 +35,11 @@ export default function BuyNewDialog(props) {
     const onValidator = (value) => {
         callValidator(value, props.changeCoin);
     }
+    const onSelectCoin = (control) => {
+        selectCoin(control.target.value);
+    }
     const selectCoin = (ticker) => {
-        const currentCoin = props.selectCoin(ticker.target.value);
+        const currentCoin = props.selectCoin(ticker);
         callValidator(props.quantity, currentCoin);
     }
     const filterCoins = (filter) => {
@@ -43,10 +59,10 @@ export default function BuyNewDialog(props) {
         }
         return null;
     }
-    if (props.changeCoin)
-        console.log(`changeCoin: ${props.changeCoin.ticker}`);
-    else
-        console.log(`changeCoin: ${props.changeCoin}`);
+    // if (props.changeCoin)
+    //     console.log(`changeCoin: ${props.changeCoin.ticker}`);
+    // else
+    //     console.log(`changeCoin: ${props.changeCoin}`);
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
     const price = props.changeCoin ? formatPrice(props.changeCoin.price) : "";
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
@@ -80,7 +96,7 @@ export default function BuyNewDialog(props) {
                 </div>
                 <select className="form-select" 
                     id="filter-select" 
-                    onChange={selectCoin}
+                    onChange={onSelectCoin}
                     value={selectedCoin}
                     placeholder="Select ticker name...">
                     {filterCoins(filter)}

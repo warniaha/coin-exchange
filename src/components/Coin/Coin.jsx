@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { ActionType } from '../ActionType';
 // import styled, { css } from 'styled-components';
 import styled from 'styled-components';
+import { formatPrice } from '../../functions/formatPrice'
 
 const Td = styled.td`
     border: 2px solid #cccccc;
@@ -22,12 +23,13 @@ export default function Coin (props) {
         event.preventDefault();
         props.handleAction(ActionType.SellSome, props.id);
     }
-    const balanceText = props.showBalance ? '$' + (props.shares * props.price) : '-';
+    const balanceText = props.showBalance ? '$' + formatPrice(props.shares * props.price) : '-';
+    // console.log(`Coin: ${JSON.stringify(props)}`);
     return (
         <tr className="coin-row">
             <Td>{props.name}</Td>
             <Td>{props.ticker}</Td>
-            <Td>${props.price}</Td>
+            <Td>${formatPrice(props.price)}</Td>
             <Td>{balanceText}</Td>
             <Td>
                 <form action="#" method="POST">

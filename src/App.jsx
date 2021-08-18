@@ -60,13 +60,13 @@ function App(props) {
   }
 
   // create coinBalance from CoinList element
-  const createCoinData = (coin) => {
+  const createCoinBalance = (coin) => {
     return {
-      key: coin.id,
+      key: coin.key,
       name: coin.name,
-      ticker: coin.symbol,
+      ticker: coin.ticker,
       shares: 0,
-      price: formatPrice(coin.quotes['USD'].price),
+      price: coin.price,
     }
   }
   const createCoinTicker = (coin) => {
@@ -101,10 +101,10 @@ function App(props) {
     return undefined;
   }
 
-  const getTickerData = async (id) => {
-    const response = await axios.get(`https://api.coinpaprika.com/v1/tickers/${id}`);
-    return createCoinData(response.data);
-}
+//   const getTickerData = async (id) => {
+//     const response = await axios.get(`https://api.coinpaprika.com/v1/tickers/${id}`);
+//     return createCoinBalance(response.data);
+// }
 
   const componentDidMount = async () => {
     await getCoinList();
@@ -127,9 +127,9 @@ function App(props) {
   const coinBalanceFilename = 'PaperCoinBalance';
   const saveCoinBalance = (values) => {
     const balances = values.map(coin => {
-      return (coin.balance > 0) ? coin : null;
+      return (coin.shares > 0) ? coin : null;
     })
-    console.log(`balances: ${balances}`);
+    // console.log(`balances: ${JSON.stringify(balances)}`);
     localStorage.setItem(coinBalanceFilename, JSON.stringify(balances));
   }
   const readCoinBalance = () => {
@@ -230,7 +230,7 @@ function App(props) {
     const newPrice = formatPrice(response.data.quotes.USD.price);
     const foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
     if (foundCoin === undefined) {
-      const foundCoin = createCoinData(response.data);
+      const foundCoin = createCoinBalance(response.data);
       const newList = [...coinBalance];
       newList.push(foundCoin);
       setCoinBalance(newList);
@@ -278,16 +278,42 @@ function App(props) {
         break;
       case ActionType.BuyShares:
         console.log(`BuyShares actionParameter: ${JSON.stringify(actionParameter)}`);
-        buyShares(actionParameter.key, actionParameter.quantity);
+        buyShares(actionParameter.key, actionParameter.shares);
         break;
       default:
         throw Object.assign(new Error(`Unexpected action type: ${action}`), { code: 402 });
     }
   }
   const buyShares = (key, quantity) => {
-    // reduce the cach available by quantity of USD
-    // add to the coinBalance of that coin (adding to the list if needed)
-    throw Object.assign(new Error(`buyShares not coded yet: ${key} ${quantity}`), { code: 402 });
+    if (quantity > cashAvailable) {
+      console.log(`not enough cach`);
+      return;
+    }
+    var newCoinBalance;
+    var purchaseCoin = coinBalance.find(coin => key === coin.key);
+    if (!purchaseCoin) {
+      const ticker = coinTicker.find(coin => key === coin.key);
+      if (!ticker) {
+        console.log(`ticker ${key} was not found`);
+        return;
+      }
+      purchaseCoin = createCoinBalance(ticker);
+      purchaseCoin.shares = quantity / purchaseCoin.price;
+      newCoinBalance = [...coinBalance];
+      newCoinBalance.push(purchaseCoin);
+      setCoinBalance(newCoinBalance);
+    }
+    else {
+      newCoinBalance = coinBalance.map(coin => {
+        if (coin.key === key) {
+          coin.shares += quantity / purchaseCoin.price;
+        }
+        return coin;
+      });
+      setCoinBalance(newCoinBalance);
+    }
+    setCashAvailable(cashAvailable - quantity);
+    console.log(`Purchased ${quantity / purchaseCoin.price} spending ${quantity}`)
   }
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
   const sellMustBeGreaterThanZero = 'Number of shares to sell must be greater than zero';
@@ -335,6 +361,7 @@ function App(props) {
     updateModalTitles(coin);
   }
 
+  // console.log(`coinBalance: ${JSON.stringify(coinBalance)}`);
   return (
     <div className="App">
       <ExchangeHeader />
