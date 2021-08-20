@@ -6,7 +6,8 @@ const ActionType = {
     Deposit: "Deposit",     // Deposit $1000
     Withdraw: "Withdraw",   // Withdraw $1000
     BuyNew: "BuyNew",   // list coins not owned to purchase dialog
-    BuyShares: "BuyShares"  // action resulting from clicking the Buy button
+    BuyShares: "BuyShares",  // action resulting from clicking the Buy button
+    SellShares: "SellShares",  // action resulting from clicking the Sell button
 }
 
 export { ActionType };

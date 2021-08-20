@@ -4,9 +4,10 @@ import CurrencyInput from 'react-currency-input-field';
 import { ActionType } from '../ActionType';
 
 export default function BuyDialog(props) {
-    const onBuy = (quantity) => {
-        props.handleAction(ActionType.BuyShares, { id: props.changeCoin.id, shares: quantity})
-        console.log('buy: ', quantity);
+    const onBuy = (button) => {
+        props.handleAction(ActionType.BuyShares, { key: props.changeCoin.key, shares: props.quantity})
+        // console.log('buy: ', quantity);
+        props.handleClose();
     }
 
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
@@ -19,6 +20,12 @@ export default function BuyDialog(props) {
         props.handleClose();
     }
     
+    const callValidator = (quantity, coin) => {
+        props.onValidator({quantity: quantity, coin: coin});
+    }
+    const onValidator = (value) => {
+        callValidator(value, props.changeCoin);
+    }
     return (
         <Modal
             show={props.show}
@@ -58,7 +65,7 @@ export default function BuyDialog(props) {
                     defaultValue={props.initialValue}
                     prefix={props.prefix}
                     intlConfig={{ locale: 'en-US', currency: 'USD' }}
-                    onValueChange={(changedText) => props.onValidator(changedText)}
+                    onValueChange={(changedText) => onValidator(changedText)}
                 />
                 <div className={feedbackClass}>{props.modalStatusMessage}</div>
             </div>

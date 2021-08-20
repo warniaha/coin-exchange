@@ -139,7 +139,8 @@ function App(props) {
     if (balances.length === 1 && balances[0] === null )
       return undefined;
     console.log(balances);
-    setCoinBalance(balances);
+    const noNan = balances.filter(coin => coin && !isNaN(coin.shares));
+    setCoinBalance(noNan);
     return balances;
   }
 
@@ -171,6 +172,7 @@ function App(props) {
     setInputTitle(`Spend cash available to purchase ${changeCoin.ticker}`);
     setAvailability('Cash Available');
     setInitialValue(0);
+    setQuantity(0);
     setModalStatusMessage(buyMustBeGreaterThanZero);
     setModalTextFieldStatus(false);
     setBuyDialogOpen(true);
@@ -187,11 +189,11 @@ function App(props) {
   }
   const selectCoin = (symbol) => {
     var currentCoin = coinBalance.find(coin => symbol === coin.ticker);
-    console.log(`selectCoin.symbol: ${symbol}`);
+    // console.log(`selectCoin.symbol: ${symbol}`);
     if (currentCoin === undefined) {
-      console.log(`selectCoin: ${symbol} was not found, need to find it from the coinTicker`);
+      // console.log(`selectCoin: ${symbol} was not found, need to find it from the coinTicker`);
       currentCoin = coinTicker.find(coin => symbol === coin.ticker);
-      console.log(currentCoin);
+      // console.log(currentCoin);
     }
     updateModalTitles(currentCoin);
     setChangeCoin(currentCoin);
@@ -206,6 +208,7 @@ function App(props) {
     setModalTitle(`Sell ${changeCoin.ticker}`);
     setInputTitle(`Sell existing ${changeCoin.ticker} for cash`);
     setAvailability('Shares Available');
+    setQuantity("");
     setInitialValue(0);
     setModalStatusMessage(sellMustBeGreaterThanZero);
     setModalTextFieldStatus(false);
@@ -219,6 +222,7 @@ function App(props) {
     setModalTitle(`Buy ${ticker}`);
     setInputTitle(`Spend cash available to purchase ${ticker}`);
     setAvailability('Cash Available');
+    setQuantity("");
     setInitialValue(0);
     setModalStatusMessage(buyMustBeGreaterThanZero);
     setModalTextFieldStatus(false);
@@ -277,12 +281,39 @@ function App(props) {
         handleBuyNew();
         break;
       case ActionType.BuyShares:
-        console.log(`BuyShares actionParameter: ${JSON.stringify(actionParameter)}`);
+        // console.log(`BuyShares actionParameter: ${JSON.stringify(actionParameter)}`);
         buyShares(actionParameter.key, actionParameter.shares);
+        break;
+      case ActionType.SellShares:
+        console.log(`SellShares actionParameter: ${JSON.stringify(actionParameter)}`);
+        sellShares(actionParameter.key, actionParameter.shares);
         break;
       default:
         throw Object.assign(new Error(`Unexpected action type: ${action}`), { code: 402 });
     }
+  }
+  const sellShares = (key, quantity) => {
+    if (!changeCoin) {
+      console.log(`changeCoin is null`);
+      return;
+    }
+    if (key !== changeCoin.key) {
+      console.log(`${key} doesn't match ${changeCoin.key}`);
+      return;
+    }
+    if (quantity > changeCoin.shares) {
+      console.log(`not enough ${changeCoin.ticker}`);
+      return;
+    }
+    const newCoinBalance = coinBalance.map(coin => {
+      if (coin.key === key) {
+        coin.shares -= quantity;
+      }
+      return coin;
+    });
+    setCoinBalance(newCoinBalance);
+    saveCoinBalance(newCoinBalance);
+    setCashAvailable(cashAvailable + (quantity * changeCoin.price));
   }
   const buyShares = (key, quantity) => {
     if (quantity > cashAvailable) {
@@ -301,19 +332,21 @@ function App(props) {
       purchaseCoin.shares = quantity / purchaseCoin.price;
       newCoinBalance = [...coinBalance];
       newCoinBalance.push(purchaseCoin);
-      setCoinBalance(newCoinBalance);
     }
     else {
       newCoinBalance = coinBalance.map(coin => {
         if (coin.key === key) {
           coin.shares += quantity / purchaseCoin.price;
+          if (coin.shares === 0)
+            return null;
         }
         return coin;
       });
-      setCoinBalance(newCoinBalance);
     }
+    setCoinBalance(newCoinBalance);
+    saveCoinBalance(newCoinBalance);
     setCashAvailable(cashAvailable - quantity);
-    console.log(`Purchased ${quantity / purchaseCoin.price} spending ${quantity}`)
+    console.log(`Purchased ${quantity / purchaseCoin.price} of ${purchaseCoin.ticker} spending $${quantity}`)
   }
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
   const sellMustBeGreaterThanZero = 'Number of shares to sell must be greater than zero';
@@ -325,6 +358,7 @@ function App(props) {
   const [availability, setAvailability] = React.useState("");
 
   const onModalSellValidator = (value) => {
+    setQuantity(value);
     const amount = (value === undefined ? 0 : Number(value));
     if (amount <= 0) {
       setModalStatusMessage(sellMustBeGreaterThanZero);
@@ -341,7 +375,7 @@ function App(props) {
     }
   }
   const onModalBuyValidator = (valueCoin) => {
-    const value = valueCoin.quantity;
+    const value = Number(valueCoin.quantity);
     const coin = valueCoin.coin;
     setQuantity(value);
     const amount = (value === undefined ? 0 : Number(value));
@@ -377,6 +411,7 @@ function App(props) {
       <BuyDialog show={isBuyDialogOpen} 
         cashSharesAvailable={cashAvailable} 
         changeCoin={changeCoin}
+        quantity={quantity}
         initialValue={initialValue}
         modalStatusMessage={modalStatusMessage}
         modalTextFieldStatus={modalTextFieldStatus}
@@ -391,6 +426,7 @@ function App(props) {
       <SellDialog show={isSellDialogOpen} 
         cashSharesAvailable={changeCoin == null ? 0 : changeCoin.shares} 
         changeCoin={changeCoin}
+        quantity={quantity}
         initialValue={initialValue}
         modalStatusMessage={modalStatusMessage}
         modalTextFieldStatus={modalTextFieldStatus}

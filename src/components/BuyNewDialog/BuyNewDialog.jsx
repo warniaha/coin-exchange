@@ -9,6 +9,7 @@ import { formatPrice } from '../../functions/formatPrice'
 export default function BuyNewDialog(props) {
     const onBuy = (buttonAction) => {
         props.handleAction(ActionType.BuyShares, { key: props.changeCoin.key, shares: props.quantity})
+        props.handleClose();
     }
     const onFilterList = (text) => {
         setFilter(text);

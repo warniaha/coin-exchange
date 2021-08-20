@@ -4,7 +4,7 @@ import Coin from '../Coin/Coin'
 export default function CoinList (props) {
     const coinBalances = () => {
         if (props.coinBalance) {
-            // console.log(`CoinList: ${JSON.stringify(props.coinBalance)}`);
+            // console.log(`CoinList: ${props.coinBalance} ${JSON.stringify(props.coinBalance)}`);
             return props.coinBalance.map( value => 
                 <Coin key={value.key} id={value.key}
                 showBalance={props.showBalance}

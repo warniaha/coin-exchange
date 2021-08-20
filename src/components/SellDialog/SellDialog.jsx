@@ -1,9 +1,11 @@
 import React from 'react'
 import { Modal, Button, Table } from 'react-bootstrap';
+import { ActionType } from '../ActionType';
 
 export default function SellDialog(props) {
     const onSell = (event) => {
-        console.log('sell: ', event);
+        props.handleAction(ActionType.SellShares, { key: props.changeCoin.key, shares: props.quantity})
+        props.handleClose();
     }
 
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
@@ -14,6 +16,10 @@ export default function SellDialog(props) {
 
     const handleCancel = () => {
         props.handleClose();
+    }
+    
+    const onAll = () => {
+        props.onValidator(props.cashSharesAvailable);
     }
     
     return (
@@ -43,11 +49,18 @@ export default function SellDialog(props) {
                     </tr>
                 </tbody>
             </Table>
-            <p>{props.inputTitle}</p>
+            <div className="flex-filter">
+                {props.inputTitle}
+                <Button variant="danger" size="sm"
+                    onClick={onAll}>
+                    All
+                </Button>
+            </div>
             <div className={divClass}>
                 <input type="text"
                     className={inputClass} 
                     id="text-input" 
+                    value={props.quantity}
                     name="input-name"
                     placeholder="Please enter number of shares to sell"
                     onChange={(event) => props.onValidator(event.target.value)}
