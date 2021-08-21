@@ -1,19 +1,15 @@
 import React from 'react'
 import './CashAvailable.css';
 import { ActionType } from '../ActionType';
+import { formatPrice } from '../../functions/formatPrice'
 
 export default function CashAvailable (props) {
-    const cashText = props.showBalance ? "Cash Available: $" + props.amount : "";
+    const cashText = props.showBalance ? "Cash Available: $" + formatPrice(props.amount) : "";
     const handleClickBuyNew = (event) => {
         event.preventDefault();
         // popup a modal to let the user decide what coin & how much
         props.handleAction(ActionType.BuyNew);
     }
-    // const handleClickHelicopter = (event) => {
-    //     event.preventDefault();
-    //     // popup a modal to let the user decide how much
-    //     props.handleAction(ActionType.Deposit, 1200);
-    // }
     const handleClickDeposit = (event) => {
         event.preventDefault();
         // popup a modal to let the user decide how much
@@ -24,6 +20,7 @@ export default function CashAvailable (props) {
         // popup a modal to let the user decide how much
         props.handleAction(ActionType.Withdraw, 1000);
     }
+    const buyEnabled = Boolean(props.coinTicker);
     return (
         <div className="cashavailable">
             {cashText}
@@ -32,7 +29,7 @@ export default function CashAvailable (props) {
                 <i className="fas fa-helicopter" />
             </button> */}
             <button className="btn btn-info" onClick={handleClickWithdraw} >Withdraw</button>
-            <button className="btn btn-success" onClick={handleClickBuyNew} >Buy</button>
+            <button className="btn btn-success" disabled={!buyEnabled} onClick={handleClickBuyNew} >Buy</button>
         </div>
     )
 }

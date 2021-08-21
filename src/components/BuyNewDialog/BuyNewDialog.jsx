@@ -12,6 +12,7 @@ export default function BuyNewDialog(props) {
         props.handleClose();
     }
     const onFilterList = (text) => {
+        debugger;
         setFilter(text);
         var mapData = props.coinTicker.map (coin => {
             if (filter.length === 0 || coin.ticker.toLowerCase().includes(text.toLowerCase())) {

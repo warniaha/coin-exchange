@@ -6,44 +6,29 @@ import CashAvailable from './components/CashAvailable/CashAvailable';
 import BuyDialog from './components/BuyDialog/BuyDialog';
 import BuyNewDialog from './components/BuyNewDialog/BuyNewDialog';
 import SellDialog from './components/SellDialog/SellDialog';
-//import 'bootstrap/dist/css/bootstrap.min.css';
+import LoadingDialog from './components/LoadingDialog/LoadingDialog';
 import 'bootswatch/dist/flatly/bootstrap.min.css';
 import { formatPrice } from './functions/formatPrice'
 import React from 'react';
-// import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { ActionType } from './components/ActionType';
-
-// copied from https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array
-function uniqByKeepFirst(list, key) {
-  var keys = new Set();
-  if (list) {
-    return list.filter(item => {
-      const itemKey = key(item)
-      if (keys.has(itemKey)) {
-        return false; // key was already added
-      }
-      else {
-        keys.add(itemKey);  // add the key to the set
-        return item;
-      }
-    });
-  }
-  return list;
-}
+import { LoadingState } from './components/LoadingState';
+import { createCoinBalance, saveCoinBalance, readCoinBalance } from './functions/CoinBalance';
+import { getCoinTicker } from './functions/CoinTicker'
 
 function App(props) {
   const[balance, setBalance] = React.useState(0);
-  const[cashAvailable, setCashAvailable] = React.useState(0);
+  const[cashAvailable, setCashAvailable] = React.useState(undefined);
   const[showBalance, setShowBalance] = React.useState(false);
-  const[coinBalance, setCoinBalance] = React.useState([]);
+  const[coinBalance, setCoinBalance] = React.useState(undefined);  // balances of each coin purchased
+  const[isLoadingDialogOpen, setLoadingDialogOpen] = React.useState(LoadingState.Initial);
   const[isBuyDialogOpen, setBuyDialogOpen] = React.useState(false);
   const[isSellDialogOpen, setSellDialogOpen] = React.useState(false);
   const[isBuyNewDialogOpen, setBuyNewDialogOpen] = React.useState(false);
-  const[changeCoin, setChangeCoin] = React.useState(null);
+  const[changeCoin, setChangeCoin] = React.useState(null);  // coin dialogs operate on
   const[initialValue, setInitialValue] = React.useState(0);
-  const[coinTicker, setCoinTicker] = React.useState();
-  const[quantity, setQuantity] = React.useState(0);
+  const[coinTicker, setCoinTicker] = React.useState(undefined);  // list of coins
+  const[quantity, setQuantity] = React.useState(0);     // dialogs quantity
 
   const closeBuyDialog = () => {
     setBuyDialogOpen(false);
@@ -54,94 +39,42 @@ function App(props) {
   const closeBuyNewDialog = () => {
     setBuyNewDialogOpen(false);
   }
+  const closeLoadingDialog = () => {
+    setLoadingDialogOpen(LoadingState.Completed);
+  }
 
   const calculateBalance = () => {
+    if (coinTicker && coinBalance && cashAvailable !== undefined) {
+      console.log(`calculateBalance not coded yet`);
+    }
     setBalance(0);
   }
 
-  // create coinBalance from CoinList element
-  const createCoinBalance = (coin) => {
-    return {
-      key: coin.key,
-      name: coin.name,
-      ticker: coin.ticker,
-      shares: 0,
-      price: coin.price,
-    }
+  const coinCashAvailableFilename = "PaperCashAvailable";
+  const saveCashAvailable = (cash) => {
+    localStorage.setItem(coinCashAvailableFilename, JSON.stringify(cash));
   }
-  const createCoinTicker = (coin) => {
-    return {
-      key: coin.id,
-      name: coin.name,
-      ticker: coin.symbol,
-      price: coin.quotes['USD'].price,
-      last_updated: coin.last_updated,
-    }
+  const readCashAvailable = () => {
+    const cash = JSON.parse(localStorage.getItem(coinCashAvailableFilename));
+    setCashAvailable(cash ?? 0);
   }
-
-  const getCoinList = async () => {
-    if (coinTicker === undefined) {
-      console.log(`getCoinList getting token list`);
-      const listResponse = await axios.get('https://api.coinpaprika.com/v1/tickers').catch(function(error) {
-        debugger;
-        console.log(error);
-        console.log(`getCoinList reading old file from computer`);
-        return readCoinList();
-      });
-      if (listResponse !== undefined) {
-        const tickers = uniqByKeepFirst(listResponse.data, key => key.symbol);
-        const tickerMap = tickers.map(coin => {
-          return createCoinTicker(coin);
-        })
-        setCoinTicker(tickerMap);
-        saveCoinList(tickerMap);
-        return tickerMap;
-      }
-    }
-    return undefined;
-  }
-
-//   const getTickerData = async (id) => {
-//     const response = await axios.get(`https://api.coinpaprika.com/v1/tickers/${id}`);
-//     return createCoinBalance(response.data);
-// }
 
   const componentDidMount = async () => {
-    await getCoinList();
-    readCoinBalance();
-    calculateBalance();
-  }
-
-  // how to read/write to localstorage: https://jsonworld.com/demo/how-to-use-localStorage-with-reactjs
-  const coinListFilename = 'PaperCoinList';
-  const saveCoinList = (values) => {
-    localStorage.setItem(coinListFilename, JSON.stringify(values));
-  }
-  const readCoinList = () => {
-    const coins = JSON.parse(localStorage.getItem(coinListFilename));
-    console.log(coins);
-    setCoinTicker(coins);
-    return coins;
-  }
-
-  const coinBalanceFilename = 'PaperCoinBalance';
-  const saveCoinBalance = (values) => {
-    const balances = values.map(coin => {
-      return (coin.shares > 0) ? coin : null;
-    })
-    // console.log(`balances: ${JSON.stringify(balances)}`);
-    localStorage.setItem(coinBalanceFilename, JSON.stringify(balances));
-  }
-  const readCoinBalance = () => {
-    const balances = JSON.parse(localStorage.getItem(coinBalanceFilename));
-    if (balances === null || balances.length === 0)
-      return undefined;
-    if (balances.length === 1 && balances[0] === null )
-      return undefined;
-    console.log(balances);
-    const noNan = balances.filter(coin => coin && !isNaN(coin.shares));
-    setCoinBalance(noNan);
-    return balances;
+    if (isLoadingDialogOpen === LoadingState.Initial) {
+      //setLoadingDialogOpen(LoadingState.Displayed);
+    }
+    if (coinTicker === undefined) {
+      setCoinTicker([]);
+      getCoinTicker(coinTicker, setCoinTicker);
+    }
+    if (coinBalance === undefined) {
+      setCoinBalance([]);
+      readCoinBalance(setCoinBalance);
+    }
+    if (cashAvailable === undefined) {
+      setCashAvailable(-1);
+      readCashAvailable();
+    }
   }
 
   React.useEffect(() => {
@@ -156,12 +89,16 @@ function App(props) {
 
   const handleDeposit = async (value) => {
     setCashAvailable(cashAvailable + value);
+    saveCashAvailable(cashAvailable + value);
+    calculateBalance();
   }
 
   const handleWithdraw = async (value) => {
     if (cashAvailable >= value)
       setCashAvailable(cashAvailable - value);
-  }
+      saveCashAvailable(cashAvailable - value);
+      calculateBalance();
+    }
   
   const handleBuyMore = async (valueChangeTicker) => {
     const changeCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
@@ -251,6 +188,7 @@ function App(props) {
       setCoinBalance(newCoinData);
       saveCoinBalance(newCoinData);
     }
+    calculateBalance();
   }
 
   const handleRefresh = async (valueChangeTicker) => {
@@ -281,11 +219,9 @@ function App(props) {
         handleBuyNew();
         break;
       case ActionType.BuyShares:
-        // console.log(`BuyShares actionParameter: ${JSON.stringify(actionParameter)}`);
         buyShares(actionParameter.key, actionParameter.shares);
         break;
       case ActionType.SellShares:
-        console.log(`SellShares actionParameter: ${JSON.stringify(actionParameter)}`);
         sellShares(actionParameter.key, actionParameter.shares);
         break;
       default:
@@ -313,7 +249,10 @@ function App(props) {
     });
     setCoinBalance(newCoinBalance);
     saveCoinBalance(newCoinBalance);
-    setCashAvailable(cashAvailable + (quantity * changeCoin.price));
+    const cash = cashAvailable + (quantity * changeCoin.price);
+    setCashAvailable(cash);
+    saveCashAvailable(cash);
+    calculateBalance();
   }
   const buyShares = (key, quantity) => {
     if (quantity > cashAvailable) {
@@ -346,6 +285,8 @@ function App(props) {
     setCoinBalance(newCoinBalance);
     saveCoinBalance(newCoinBalance);
     setCashAvailable(cashAvailable - quantity);
+    saveCashAvailable(cashAvailable - quantity);
+    calculateBalance();
     console.log(`Purchased ${quantity / purchaseCoin.price} of ${purchaseCoin.ticker} spending $${quantity}`)
   }
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
@@ -395,6 +336,8 @@ function App(props) {
     updateModalTitles(coin);
   }
 
+  // Attempt to calculate the balance each time the component displays (may cause it to recurse)
+  // calculateBalance();
   // console.log(`coinBalance: ${JSON.stringify(coinBalance)}`);
   return (
     <div className="App">
@@ -403,6 +346,7 @@ function App(props) {
         amount={balance} 
         showBalance={showBalance} />
       <CashAvailable handleAction={handleAction}
+        coinTicker={coinTicker}
         showBalance={showBalance}
         amount={cashAvailable} />
       <CoinList coinBalance={coinBalance} 
@@ -452,6 +396,11 @@ function App(props) {
         quantity={quantity}
         handleAction={handleAction}
         handleClose={closeBuyNewDialog}/>
+      <LoadingDialog show={isLoadingDialogOpen === LoadingState.Displayed}
+        coinBalance={props.coinBalance}
+        coinTicker={props.coinTicker}
+        cashAvailable={props.cashAvailable}
+        handleClose={closeLoadingDialog}/>
     </div>
   );
 }
