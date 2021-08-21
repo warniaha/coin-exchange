@@ -4,7 +4,7 @@ import { ActionType } from '../ActionType';
 import { formatPrice } from '../../functions/formatPrice'
 
 export default function CashAvailable (props) {
-    const cashText = props.showBalance ? "Cash Available: $" + formatPrice(props.amount) : "";
+    const cashText = `Cash Available: $${props.showBalance ? formatPrice(props.amount, 2) : " -"}`;
     const handleClickBuyNew = (event) => {
         event.preventDefault();
         // popup a modal to let the user decide what coin & how much
@@ -24,12 +24,11 @@ export default function CashAvailable (props) {
     return (
         <div className="cashavailable">
             {cashText}
-            <button className="btn btn-info" onClick={handleClickDeposit} >Deposit</button>
-            {/* <button className="btn btn-success" onClick={handleClickHelicopter} >
-                <i className="fas fa-helicopter" />
-            </button> */}
-            <button className="btn btn-info" onClick={handleClickWithdraw} >Withdraw</button>
-            <button className="btn btn-success" disabled={!buyEnabled} onClick={handleClickBuyNew} >Buy</button>
+            <div className='btn-toolbar text-center well'>
+                <button className="btn btn-info" onClick={handleClickDeposit} >Deposit</button>
+                <button className="btn btn-info" onClick={handleClickWithdraw} >Withdraw</button>
+                <button className="btn btn-success" disabled={!buyEnabled} onClick={handleClickBuyNew} >Buy</button>
+            </div>
         </div>
     )
 }

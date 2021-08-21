@@ -1,10 +1,9 @@
 import React from 'react'
 import { Modal, Button, Table } from 'react-bootstrap';
-import { ActionType } from '../ActionType';
 
 export default function LoadingDialog(props) {
     const loadingMessage = (status) => {
-        return status ? "Loading..." : "Completed";
+        return status ? "Completed" : "Loading...";
     }
     const balancesStatus = () => {
         const status = Boolean(props.coinBalance);
@@ -24,9 +23,6 @@ export default function LoadingDialog(props) {
             {loadingMessage(status)}
         </div>
     }
-    const handleClose = () => {
-        props.handleClose();
-    }
     const [seconds, setSeconds] = React.useState(0);
     const [reloadSeconds, setReloadSeconds] = React.useState(5);
     const handleReload = () => {
@@ -37,17 +33,20 @@ export default function LoadingDialog(props) {
     React.useEffect(() => {
         if (props.show) {
             const interval = setInterval(() => {
-            debugger;
+            // console.log(`props.coinBalance: ${Boolean(props.coinBalance)} ${props.coinBalance}`);
+            // console.log(`props.coinTicker: ${Boolean(props.coinTicker)}`);
+            // console.log(`props.cashAvailable: ${props.cashAvailable !== undefined && props.cashAvailable >= 0}`);
             setSeconds(seconds => seconds + 1);
             if (Boolean(props.coinBalance) &&
                 Boolean(props.coinTicker) &&
                 (props.cashAvailable !== undefined && props.cashAvailable >= 0)) {
-                handleClose();
+                // console.log(`Closing LoadingDialog...`);
+                props.handleClose();
             }
             }, 1000);
             return () => clearInterval(interval);
         }
-    }, []);
+    }, [props]);
     return (
         <Modal
             show={props.show}

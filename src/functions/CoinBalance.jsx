@@ -17,11 +17,9 @@ export const saveCoinBalance = (values) => {
 }
 
 export const readCoinBalance = (setCoinBalance) => {
-  const balances = JSON.parse(localStorage.getItem(coinBalanceFilename));
-  if (balances === null || balances.length === 0)
-    return undefined;
-  if (balances.length === 1 && balances[0] === null )
-    return undefined;
+  var balances = JSON.parse(localStorage.getItem(coinBalanceFilename));
+  if (balances === null)
+    balances = [];
   console.log(balances);
   const noNan = balances.filter(coin => coin && !isNaN(coin.shares));
   setCoinBalance(noNan);

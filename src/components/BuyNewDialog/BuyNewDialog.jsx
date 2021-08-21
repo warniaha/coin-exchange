@@ -12,7 +12,6 @@ export default function BuyNewDialog(props) {
         props.handleClose();
     }
     const onFilterList = (text) => {
-        debugger;
         setFilter(text);
         var mapData = props.coinTicker.map (coin => {
             if (filter.length === 0 || coin.ticker.toLowerCase().includes(text.toLowerCase())) {
@@ -28,6 +27,16 @@ export default function BuyNewDialog(props) {
             selectCoin(mapData[0].ticker);
         }
     }
+
+    const onAll = () => {
+        props.onValidator(props.cashSharesAvailable);
+    }
+    
+    const onRefresh = () => {
+        if (key)
+            props.handleAction(ActionType.Refresh, key);
+    }
+    
     const handleCancel = () => {
         props.handleClose();
     }
@@ -61,10 +70,9 @@ export default function BuyNewDialog(props) {
         }
         return null;
     }
-    // if (props.changeCoin)
-    //     console.log(`changeCoin: ${props.changeCoin.ticker}`);
-    // else
-    //     console.log(`changeCoin: ${props.changeCoin}`);
+
+    const key = props.changeCoin ? props.changeCoin.key : null;
+    const refreshButtonEnabled = Boolean(key);
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
     const price = props.changeCoin ? formatPrice(props.changeCoin.price) : "";
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
@@ -120,7 +128,20 @@ export default function BuyNewDialog(props) {
                         </tr>
                     </tbody>
                 </Table>
-                <p>{props.inputTitle}</p>
+                <div className="flex-filter">
+                {props.inputTitle}
+                <div>
+                    <Button variant="info" size="sm"
+                        disabled={!refreshButtonEnabled}
+                        onClick={onRefresh}>
+                        Refresh price
+                    </Button>
+                    <Button variant="danger" size="sm"
+                        onClick={onAll}>
+                        All
+                    </Button>
+                </div>
+            </div>
                 <div className={divClass}>
                     <CurrencyInput
                         className={inputClass} 

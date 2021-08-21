@@ -1,4 +1,19 @@
 .cashavailable {
-    border: 1px solid blue;
-    font-size: 3rem;
+    border: 1px solid white;
+    font-size: 1.5rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+/* .btn-toolbar .btn{
+    margin-left: 5px;
+} */
+.btn-toolbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    align-items: center;
 }

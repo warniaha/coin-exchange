@@ -20,6 +20,7 @@ export default function CoinList (props) {
                 <tr>
                 <th>Name</th>
                 <th>Ticker</th>
+                <th>Shares</th>
                 <th>Price</th>
                 <th>Balance</th>
                 <th>Actions</th>

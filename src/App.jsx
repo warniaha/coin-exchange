@@ -41,13 +41,21 @@ function App(props) {
   }
   const closeLoadingDialog = () => {
     setLoadingDialogOpen(LoadingState.Completed);
+    calculateBalance();
   }
 
-  const calculateBalance = () => {
-    if (coinTicker && coinBalance && cashAvailable !== undefined) {
-      console.log(`calculateBalance not coded yet`);
+  const calculateBalance = (bal = coinBalance, cash = cashAvailable) => {
+    if (typeof(coinTicker) == "object" &&
+      typeof(bal) == "object" &&
+      cash !== undefined && cash >= 0) {
+      var total = cash;
+      bal.forEach(coin => {
+        total += coin.shares * coin.price;
+      });
+      setBalance(total);
     }
-    setBalance(0);
+    else
+      setBalance(0);
   }
 
   const coinCashAvailableFilename = "PaperCashAvailable";
@@ -59,16 +67,27 @@ function App(props) {
     setCashAvailable(cash ?? 0);
   }
 
+  const onReloadLoadingDialog = () => {
+    if (coinTicker === null) {
+      getCoinTicker(coinTicker, setCoinTicker);
+    }
+    if (coinBalance === null) {
+      readCoinBalance(setCoinBalance);
+    }
+    if (cashAvailable === -1) {
+      readCashAvailable();
+    }
+  }
   const componentDidMount = async () => {
     if (isLoadingDialogOpen === LoadingState.Initial) {
-      //setLoadingDialogOpen(LoadingState.Displayed);
+      setLoadingDialogOpen(LoadingState.Displayed);
     }
     if (coinTicker === undefined) {
-      setCoinTicker([]);
+      setCoinTicker(null);
       getCoinTicker(coinTicker, setCoinTicker);
     }
     if (coinBalance === undefined) {
-      setCoinBalance([]);
+      setCoinBalance(null);
       readCoinBalance(setCoinBalance);
     }
     if (cashAvailable === undefined) {
@@ -78,35 +97,39 @@ function App(props) {
   }
 
   React.useEffect(() => {
-    if (coinBalance === undefined || coinBalance.length === 0) {
+    if (coinBalance === undefined) {
       componentDidMount();
     }
   })
 
   const toggleBalance = (showBalance) => {
     setShowBalance(showBalance);
-  }
-
-  const handleDeposit = async (value) => {
-    setCashAvailable(cashAvailable + value);
-    saveCashAvailable(cashAvailable + value);
     calculateBalance();
   }
 
+  const handleDeposit = async (value) => {
+    const total = cashAvailable + value;
+    setCashAvailable(total);
+    saveCashAvailable(total);
+    calculateBalance(coinBalance, total);
+  }
+
   const handleWithdraw = async (value) => {
-    if (cashAvailable >= value)
-      setCashAvailable(cashAvailable - value);
-      saveCashAvailable(cashAvailable - value);
-      calculateBalance();
+    if (cashAvailable >= value) {
+      const total = cashAvailable - value;
+      setCashAvailable(total);
+      saveCashAvailable(total);
+      calculateBalance(coinBalance, total);
     }
+  }
   
   const handleBuyMore = async (valueChangeTicker) => {
-    const changeCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
-    setChangeCoin(changeCoin);
+    const foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
+    setChangeCoin(foundCoin);
     // setup modal
     setActionTitle('Buy');
-    setModalTitle(`Buy ${changeCoin.ticker}`);
-    setInputTitle(`Spend cash available to purchase ${changeCoin.ticker}`);
+    setModalTitle(`Buy ${foundCoin.ticker}`);
+    setInputTitle(`Spend cash available to purchase ${foundCoin.ticker}`);
     setAvailability('Cash Available');
     setInitialValue(0);
     setQuantity(0);
@@ -138,12 +161,12 @@ function App(props) {
   }
 
   const handleSellSome = async (valueChangeTicker) => {
-    const changeCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
-    setChangeCoin(changeCoin);
+    const foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
+    setChangeCoin(foundCoin);
     // setup modal
     setActionTitle('Sell');
-    setModalTitle(`Sell ${changeCoin.ticker}`);
-    setInputTitle(`Sell existing ${changeCoin.ticker} for cash`);
+    setModalTitle(`Sell ${foundCoin.ticker}`);
+    setInputTitle(`Sell existing ${foundCoin.ticker} for cash`);
     setAvailability('Shares Available');
     setQuantity("");
     setInitialValue(0);
@@ -169,13 +192,14 @@ function App(props) {
   const updateTickerPrice = async (valueChangeTicker) => {
     const response = await axios.get(`https://api.coinpaprika.com/v1/tickers/${valueChangeTicker}`);
     const newPrice = formatPrice(response.data.quotes.USD.price);
-    const foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
+    var foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
     if (foundCoin === undefined) {
-      const foundCoin = createCoinBalance(response.data);
+      foundCoin = createCoinBalance(response.data);
       const newList = [...coinBalance];
       newList.push(foundCoin);
       setCoinBalance(newList);
       saveCoinBalance(newList);
+      calculateBalance(newList, cashAvailable);
     }
     else {
       const newCoinData = coinBalance.map( function( values ) {
@@ -187,12 +211,17 @@ function App(props) {
       });
       setCoinBalance(newCoinData);
       saveCoinBalance(newCoinData);
+      calculateBalance(newCoinData, cashAvailable);
     }
-    calculateBalance();
+    console.log(`Updated price of ${foundCoin.ticker} to ${newPrice}`);
+    return foundCoin;
   }
 
   const handleRefresh = async (valueChangeTicker) => {
-    updateTickerPrice(valueChangeTicker);
+    updateTickerPrice(valueChangeTicker).then(result => {
+      // make sure to update the coin for the dialogs
+      setChangeCoin(result);
+    });
   }
 
   const handleAction = async (action, actionParameter) => {
@@ -252,7 +281,7 @@ function App(props) {
     const cash = cashAvailable + (quantity * changeCoin.price);
     setCashAvailable(cash);
     saveCashAvailable(cash);
-    calculateBalance();
+    calculateBalance(newCoinBalance, cash);
   }
   const buyShares = (key, quantity) => {
     if (quantity > cashAvailable) {
@@ -284,9 +313,10 @@ function App(props) {
     }
     setCoinBalance(newCoinBalance);
     saveCoinBalance(newCoinBalance);
-    setCashAvailable(cashAvailable - quantity);
-    saveCashAvailable(cashAvailable - quantity);
-    calculateBalance();
+    const cash = cashAvailable - quantity;
+    setCashAvailable(cash);
+    saveCashAvailable(cash);
+    calculateBalance(newCoinBalance, cash);
     console.log(`Purchased ${quantity / purchaseCoin.price} of ${purchaseCoin.ticker} spending $${quantity}`)
   }
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
@@ -329,6 +359,7 @@ function App(props) {
       setModalTextFieldStatus(false);
     }
     else {
+      console.log(JSON.stringify(coin));
       const shares = amount / coin.price;
       setModalStatusMessage(`Purchase ${shares} of ${coin.ticker}`);
       setModalTextFieldStatus(true);
@@ -336,9 +367,6 @@ function App(props) {
     updateModalTitles(coin);
   }
 
-  // Attempt to calculate the balance each time the component displays (may cause it to recurse)
-  // calculateBalance();
-  // console.log(`coinBalance: ${JSON.stringify(coinBalance)}`);
   return (
     <div className="App">
       <ExchangeHeader />
@@ -397,9 +425,11 @@ function App(props) {
         handleAction={handleAction}
         handleClose={closeBuyNewDialog}/>
       <LoadingDialog show={isLoadingDialogOpen === LoadingState.Displayed}
-        coinBalance={props.coinBalance}
-        coinTicker={props.coinTicker}
-        cashAvailable={props.cashAvailable}
+        coinBalance={coinBalance}
+        coinTicker={coinTicker}
+        cashAvailable={cashAvailable}
+        modalTitle="Loading values"
+        handleReload={onReloadLoadingDialog}
         handleClose={closeLoadingDialog}/>
     </div>
   );

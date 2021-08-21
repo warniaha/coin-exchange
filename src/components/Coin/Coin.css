@@ -1,7 +1,10 @@
-.flex-filter {
+.btn-toolbar .btn{
+    margin-left: 5px;
+}
+.btn-toolbar {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     flex-wrap: nowrap;
     align-items: center;
-  }
+}

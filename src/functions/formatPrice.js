@@ -1,7 +1,6 @@
-export const formatPrice = (price) => {
+export const formatPrice = (price, digits = 4) => {
     if (price === 0)
         return price;
-    var digits = 4;
     var formattedPrice = parseFloat(Number(price).toFixed(digits));
     for (; formattedPrice === 0; ++digits) {
         if (digits === 15)

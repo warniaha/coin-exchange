@@ -10,12 +10,23 @@ export default function BuyDialog(props) {
         props.handleClose();
     }
 
+    const key = props.changeCoin ? props.changeCoin.key : null;
+    const refreshButtonEnabled = Boolean(key);
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
     const price = props.changeCoin ? props.changeCoin.price : "";
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
     const inputClass = (props.modalTextFieldStatus ? "form-control is-valid" : "form-control is-invalid");
     const feedbackClass = (props.modalTextFieldStatus ? "valid-feedback" : "invalid-feedback");
 
+    const onAll = () => {
+        props.onValidator(props.cashSharesAvailable);
+    }
+    
+    const onRefresh = () => {
+        if (key)
+            props.handleAction(ActionType.Refresh, key);
+    }
+    
     const handleCancel = () => {
         props.handleClose();
     }
@@ -53,7 +64,20 @@ export default function BuyDialog(props) {
                     </tr>
                 </tbody>
             </Table>
-            <p>{props.inputTitle}</p>
+            <div className="flex-filter">
+                {props.inputTitle}
+                <div>
+                    <Button variant="info" size="sm"
+                        disabled={!refreshButtonEnabled}
+                        onClick={onRefresh}>
+                        Refresh price
+                    </Button>
+                    <Button variant="danger" size="sm"
+                        onClick={onAll}>
+                        All
+                    </Button>
+                </div>
+            </div>
             <div className={divClass}>
                 <CurrencyInput
                     className={inputClass} 

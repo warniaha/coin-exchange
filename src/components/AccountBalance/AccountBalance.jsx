@@ -3,10 +3,11 @@ import React from 'react'
 import styled from 'styled-components';
 import { ActionType } from '../ActionType';
 import './AccountBalance.css';
+import { formatPrice } from '../../functions/formatPrice';
 
 const Section = styled.section`
-    border: 1px solid red;
-    font-size: 3rem;
+    border: 1px solid white;
+    font-size: 1.5rem;
 `;
 
 export default function AccountBalance (props) {
@@ -16,12 +17,14 @@ export default function AccountBalance (props) {
     }
     const buttonText = props.showBalance ? 'Hide Balance' : 'Show Balance';
     const buttonClass = 'btn ' + (props.showBalance ? 'btn-warning' : 'btn-info');
-    const balanceText = props.showBalance ? "Net Balance: $" + props.amount : "";
+    const balanceText = `Net Balance: $${props.showBalance ? formatPrice(props.amount, 2) : " -"}`;
     return (
         <Section className="balance">
-            {balanceText}
-            <button 
-                className={buttonClass} onClick={handleClick} >{buttonText}</button>
+            <div className="flex-filter">
+                {balanceText}
+                <button 
+                    className={buttonClass} onClick={handleClick} >{buttonText}</button>
+            </div>
         </Section>
     );
 }

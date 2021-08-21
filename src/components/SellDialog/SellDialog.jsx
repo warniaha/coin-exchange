@@ -8,6 +8,8 @@ export default function SellDialog(props) {
         props.handleClose();
     }
 
+    const key = props.changeCoin ? props.changeCoin.key : null;
+    const refreshButtonEnabled = Boolean(key);
     const ticker = props.changeCoin ? props.changeCoin.ticker : "";
     const price = props.changeCoin ? props.changeCoin.price : "";
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
@@ -20,6 +22,11 @@ export default function SellDialog(props) {
     
     const onAll = () => {
         props.onValidator(props.cashSharesAvailable);
+    }
+    
+    const onRefresh = () => {
+        if (key)
+            props.handleAction(ActionType.Refresh, key);
     }
     
     return (
@@ -51,10 +58,17 @@ export default function SellDialog(props) {
             </Table>
             <div className="flex-filter">
                 {props.inputTitle}
-                <Button variant="danger" size="sm"
-                    onClick={onAll}>
-                    All
-                </Button>
+                <div>
+                    <Button variant="info" size="sm"
+                        disabled={!refreshButtonEnabled}
+                        onClick={onRefresh}>
+                        Refresh price
+                    </Button>
+                    <Button variant="danger" size="sm"
+                        onClick={onAll}>
+                        All
+                    </Button>
+                </div>
             </div>
             <div className={divClass}>
                 <input type="text"

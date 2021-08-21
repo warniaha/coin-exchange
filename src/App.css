@@ -16,6 +16,11 @@
   font-size: 1.75rem;
 }
 
+tr td {
+  width: 100%;
+  white-space: nowrap;
+}
+
 .App-link {
   color: #61dafb;
 }
