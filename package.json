@@ -23,6 +23,7 @@
     "web-vitals": "^1.1.2"
   },
   "homepage": "https://warniaha.github.io/coin-exchange",
+  "repository": "https://github.com/warniaha/coin-exchange",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
