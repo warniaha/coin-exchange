@@ -19,12 +19,13 @@ export default function BuyDialog(props) {
     const feedbackClass = (props.modalTextFieldStatus ? "valid-feedback" : "invalid-feedback");
 
     const onAll = () => {
-        props.onValidator(props.cashSharesAvailable);
+        props.onValidator({quantity: props.cashSharesAvailable, coin: props.changeCoin});
     }
     
     const onRefresh = () => {
-        if (key)
+        if (key) {
             props.handleAction(ActionType.Refresh, key);
+        }
     }
     
     const handleCancel = () => {

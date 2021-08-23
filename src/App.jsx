@@ -1,35 +1,42 @@
 import './App.css';
 import AccountBalance from './components/AccountBalance/AccountBalance';
 import CoinList from './components/CoinList/CoinList';
+import FeesBar, { resetFees, saveFees, readFees } from './components/FeesBar/FeesBar';
 import ExchangeHeader from './components/ExchangeHeader/ExchangeHeader';
-import CashAvailable from './components/CashAvailable/CashAvailable';
+import CashAvailable, { resetCashAvailable, saveCashAvailable, readCashAvailable } from './components/CashAvailable/CashAvailable';
 import BuyDialog from './components/BuyDialog/BuyDialog';
 import BuyNewDialog from './components/BuyNewDialog/BuyNewDialog';
 import SellDialog from './components/SellDialog/SellDialog';
 import LoadingDialog from './components/LoadingDialog/LoadingDialog';
+import SettingsDialog, {resetSettings } from './components/SettingsDialog/SettingsDialog';
 import 'bootswatch/dist/flatly/bootstrap.min.css';
 import { formatPrice } from './functions/formatPrice'
 import React from 'react';
 import axios from 'axios';
 import { ActionType } from './components/ActionType';
 import { LoadingState } from './components/LoadingState';
-import { createCoinBalance, saveCoinBalance, readCoinBalance } from './functions/CoinBalance';
-import { getCoinTicker } from './functions/CoinTicker'
+import { createCoinBalance, saveCoinBalance, readCoinBalance, resetCoinBalance } from './functions/CoinBalance';
+import { getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
 
 function App(props) {
   const[balance, setBalance] = React.useState(0);
   const[cashAvailable, setCashAvailable] = React.useState(undefined);
+  const[fees, setFees] = React.useState(undefined);
   const[showBalance, setShowBalance] = React.useState(false);
   const[coinBalance, setCoinBalance] = React.useState(undefined);  // balances of each coin purchased
   const[isLoadingDialogOpen, setLoadingDialogOpen] = React.useState(LoadingState.Initial);
   const[isBuyDialogOpen, setBuyDialogOpen] = React.useState(false);
   const[isSellDialogOpen, setSellDialogOpen] = React.useState(false);
   const[isBuyNewDialogOpen, setBuyNewDialogOpen] = React.useState(false);
+  const[isSettingsDialogOpen, setSettingsDialogOpen] = React.useState(false);
   const[changeCoin, setChangeCoin] = React.useState(null);  // coin dialogs operate on
   const[initialValue, setInitialValue] = React.useState(0);
   const[coinTicker, setCoinTicker] = React.useState(undefined);  // list of coins
   const[quantity, setQuantity] = React.useState(0);     // dialogs quantity
 
+  const closeSettingsDialog = () => {
+    setSettingsDialogOpen(false);
+  }
   const closeBuyDialog = () => {
     setBuyDialogOpen(false);
   }
@@ -58,41 +65,44 @@ function App(props) {
       setBalance(0);
   }
 
-  const coinCashAvailableFilename = "PaperCashAvailable";
-  const saveCashAvailable = (cash) => {
-    localStorage.setItem(coinCashAvailableFilename, JSON.stringify(cash));
-  }
-  const readCashAvailable = () => {
-    const cash = JSON.parse(localStorage.getItem(coinCashAvailableFilename));
-    setCashAvailable(cash ?? 0);
-  }
-
   const onReloadLoadingDialog = () => {
-    if (coinTicker === null) {
-      getCoinTicker(coinTicker, setCoinTicker);
-    }
-    if (coinBalance === null) {
-      readCoinBalance(setCoinBalance);
-    }
-    if (cashAvailable === -1) {
-      readCashAvailable();
-    }
-  }
-  const componentDidMount = async () => {
-    if (isLoadingDialogOpen === LoadingState.Initial) {
-      setLoadingDialogOpen(LoadingState.Displayed);
-    }
     if (coinTicker === undefined) {
-      setCoinTicker(null);
       getCoinTicker(coinTicker, setCoinTicker);
     }
     if (coinBalance === undefined) {
-      setCoinBalance(null);
       readCoinBalance(setCoinBalance);
     }
     if (cashAvailable === undefined) {
-      setCashAvailable(-1);
-      readCashAvailable();
+      readCashAvailable(setCashAvailable);
+    }
+    if (fees === undefined) {
+      readFees(setFees);
+    }
+  }
+
+  const reloadApp = () => {
+    setCoinTicker(undefined);
+    setCoinBalance(undefined);
+    setCashAvailable(undefined);
+    setFees(undefined);
+    componentDidMount(true);
+  }
+
+  const componentDidMount = async (forcedReset = false) => {
+    if (isLoadingDialogOpen === LoadingState.Initial || forcedReset) {
+      setLoadingDialogOpen(LoadingState.Displayed);
+    }
+    if (coinTicker === undefined || forcedReset) {
+      getCoinTicker(undefined, setCoinTicker);
+    }
+    if (coinBalance === undefined || forcedReset) {
+      readCoinBalance(setCoinBalance);
+    }
+    if (cashAvailable === undefined || forcedReset) {
+      readCashAvailable(setCashAvailable);
+    }
+    if (fees === undefined || forcedReset) {
+      readFees(setFees);
     }
   }
 
@@ -224,9 +234,29 @@ function App(props) {
     });
   }
 
+  const handleSettings = () => {
+    setSettingsDialogOpen(true);
+  }
+
+  const handleReset = () => {
+    resetCoinTicker();
+    resetCoinBalance();
+    resetSettings();
+    resetCashAvailable();
+    resetFees();
+    setSettingsDialogOpen(false);
+    reloadApp();
+  }
+
   const handleAction = async (action, actionParameter) => {
     switch (action) {
-      case ActionType.Refresh:
+      case ActionType.Reset:
+        handleReset(actionParameter);
+        break;
+      case ActionType.Settings:
+        handleSettings(actionParameter);
+        break;
+        case ActionType.Refresh:
         handleRefresh(actionParameter);
         break;
       case ActionType.BuyMore:
@@ -272,7 +302,10 @@ function App(props) {
     }
     const newCoinBalance = coinBalance.map(coin => {
       if (coin.key === key) {
+        const sellFees = quantity * fees;
+        quantity -= fees;
         coin.shares -= quantity;
+        coin.costBasis = coin.shares > 0 ? ((coin.shares * coin.costBasis) - quantity) / coin.price : 0;
       }
       return coin;
     });
@@ -289,6 +322,8 @@ function App(props) {
       return;
     }
     var newCoinBalance;
+    var buyFees = quantity * fees;
+    quantity -= buyFees;
     var purchaseCoin = coinBalance.find(coin => key === coin.key);
     if (!purchaseCoin) {
       const ticker = coinTicker.find(coin => key === coin.key);
@@ -296,14 +331,17 @@ function App(props) {
         console.log(`ticker ${key} was not found`);
         return;
       }
+      
       purchaseCoin = createCoinBalance(ticker);
       purchaseCoin.shares = quantity / purchaseCoin.price;
+      purchaseCoin.costBasis = purchaseCoin.price;
       newCoinBalance = [...coinBalance];
       newCoinBalance.push(purchaseCoin);
     }
     else {
       newCoinBalance = coinBalance.map(coin => {
         if (coin.key === key) {
+          coin.costBasis = ((coin.shares * coin.costBasis) + quantity) / purchaseCoin.price;
           coin.shares += quantity / purchaseCoin.price;
           if (coin.shares === 0)
             return null;
@@ -370,14 +408,18 @@ function App(props) {
   return (
     <div className="App">
       <ExchangeHeader />
-      <AccountBalance handleAction={handleAction} 
+      <AccountBalance
+        handleAction={handleAction} 
         amount={balance} 
         showBalance={showBalance} />
-      <CashAvailable handleAction={handleAction}
+      <CashAvailable
+        handleAction={handleAction}
         coinTicker={coinTicker}
         showBalance={showBalance}
         amount={cashAvailable} />
-      <CoinList coinBalance={coinBalance} 
+      {/* <FeesBar feesCollected="0" feeRate={fees} /> */}
+      <CoinList
+        coinBalance={coinBalance} 
         showBalance={showBalance} 
         handleAction={handleAction} />
       <BuyDialog show={isBuyDialogOpen} 
@@ -428,9 +470,16 @@ function App(props) {
         coinBalance={coinBalance}
         coinTicker={coinTicker}
         cashAvailable={cashAvailable}
+        fees={fees}
         modalTitle="Loading values"
         handleReload={onReloadLoadingDialog}
         handleClose={closeLoadingDialog}/>
+      <SettingsDialog show={isSettingsDialogOpen} 
+        modalTitle="Settings"
+        inputTitle="Paper Coin Exchange Settings"
+        fees={fees}
+        handleAction={handleAction}
+        handleClose={closeSettingsDialog} />
     </div>
   );
 }

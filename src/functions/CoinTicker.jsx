@@ -14,6 +14,10 @@ export const createCoinTicker = (coin) => {
 // how to read/write to localstorage: https://jsonworld.com/demo/how-to-use-localStorage-with-reactjs
 const coinListFilename = 'PaperCoinList';
 
+export const resetCoinTicker = () => {
+    localStorage.removeItem(coinListFilename);
+}
+
 export const saveCoinTicker = (values) => {
     localStorage.setItem(coinListFilename, JSON.stringify(values));
 }
@@ -37,6 +41,7 @@ const getTickers = async (setCoinTicker) => {
 export const getCoinTicker = (coinTicker, setCoinTicker) => {
     if (coinTicker === undefined) {
         console.log(`getCoinTicker getting token list`);
+        setCoinTicker(null);    // prevent re-entrancy
         getTickers(setCoinTicker).then(listResponse => {
             if (listResponse !== undefined) {
                 const tickers = uniqueByKeepFirst(listResponse.data, key => key.symbol);
@@ -47,6 +52,10 @@ export const getCoinTicker = (coinTicker, setCoinTicker) => {
                 saveCoinTicker(tickerMap);
                 return tickerMap;
             }
+        }, reason => {
+            debugger;
+            console.log(`getCoinTicker failed: ${reason}`);
+            setCoinTicker(undefined);    // reset on failure
         });
     }
     return undefined;

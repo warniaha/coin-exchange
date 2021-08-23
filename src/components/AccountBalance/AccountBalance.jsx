@@ -15,6 +15,10 @@ export default function AccountBalance (props) {
         event.preventDefault();
         props.handleAction(ActionType.ToggleBalance, !props.showBalance);
     }
+    const handleSettings = (event) => {
+        event.preventDefault();
+        props.handleAction(ActionType.Settings);
+    }
     const buttonText = props.showBalance ? 'Hide Balance' : 'Show Balance';
     const buttonClass = 'btn ' + (props.showBalance ? 'btn-warning' : 'btn-info');
     const balanceText = `Net Balance: $${props.showBalance ? formatPrice(props.amount, 2) : " -"}`;
@@ -22,8 +26,16 @@ export default function AccountBalance (props) {
         <Section className="balance">
             <div className="flex-filter">
                 {balanceText}
-                <button 
-                    className={buttonClass} onClick={handleClick} >{buttonText}</button>
+                <div className='btn-toolbar text-center well'>
+                    <button 
+                        className="btn btn-info" 
+                        onClick={handleSettings} >Settings
+                    </button>
+                    <button 
+                        className={buttonClass} 
+                        onClick={handleClick} >{buttonText}
+                    </button>
+                </div>
             </div>
         </Section>
     );

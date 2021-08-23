@@ -11,6 +11,12 @@ export default function LoadingDialog(props) {
             {loadingMessage(status)}
         </div>
     }
+    const feesStatus = () => {
+        const status = props.fees !== undefined;
+        return <div>
+            {loadingMessage(status)}
+        </div>
+    }
     const tickersStatus = () => {
         const status = Boolean(props.coinTicker);
         return <div>
@@ -33,17 +39,14 @@ export default function LoadingDialog(props) {
     React.useEffect(() => {
         if (props.show) {
             const interval = setInterval(() => {
-            // console.log(`props.coinBalance: ${Boolean(props.coinBalance)} ${props.coinBalance}`);
-            // console.log(`props.coinTicker: ${Boolean(props.coinTicker)}`);
-            // console.log(`props.cashAvailable: ${props.cashAvailable !== undefined && props.cashAvailable >= 0}`);
             setSeconds(seconds => seconds + 1);
             if (Boolean(props.coinBalance) &&
                 Boolean(props.coinTicker) &&
+                props.fees !== undefined &&
                 (props.cashAvailable !== undefined && props.cashAvailable >= 0)) {
-                // console.log(`Closing LoadingDialog...`);
                 props.handleClose();
-            }
-            }, 1000);
+                setSeconds(0);
+            }}, 1000);
             return () => clearInterval(interval);
         }
     }, [props]);
@@ -79,6 +82,14 @@ export default function LoadingDialog(props) {
                             <td>
                                 <div>
                                     {cashAvailableStatus()}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Fees</th>
+                            <td>
+                                <div>
+                                    {feesStatus()}
                                 </div>
                             </td>
                         </tr>

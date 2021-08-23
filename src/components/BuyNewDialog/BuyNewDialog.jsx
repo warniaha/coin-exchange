@@ -14,7 +14,7 @@ export default function BuyNewDialog(props) {
     const onFilterList = (text) => {
         setFilter(text);
         var mapData = props.coinTicker.map (coin => {
-            if (filter.length === 0 || coin.ticker.toLowerCase().includes(text.toLowerCase())) {
+            if (matchesFilter(coin, text)) {
                 return coin;
             }
             return null;
@@ -53,10 +53,16 @@ export default function BuyNewDialog(props) {
         const currentCoin = props.selectCoin(ticker);
         callValidator(props.quantity, currentCoin);
     }
-    const filterCoins = (filter) => {
+    const matchesFilter = (coin, filter) => {
+        return filter.length === 0 ||
+            coin.key.toLowerCase().includes(filter.toLowerCase()) ||
+            coin.name.toLowerCase().includes(filter.toLowerCase()) ||
+            coin.ticker.toLowerCase().includes(filter.toLowerCase());
+    }
+    const filterCoins = (text) => {
         if (props.coinTicker !== undefined && props.show === true) {
             const mapData = props.coinTicker.map (coin => {
-                if (filter.length === 0 || coin.ticker.toLowerCase().includes(filter.toLowerCase())) {
+                if (matchesFilter(coin, text)) {
                     if (props.changeCoin && coin.ticker === props.changeCoin.ticker){
                     }
                     // console.log(`<option key=${coin.ticker} value=${coin.ticker} >${coin.ticker}</option>`)

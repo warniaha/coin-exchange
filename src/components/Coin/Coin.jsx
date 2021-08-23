@@ -25,6 +25,7 @@ export default function Coin (props) {
         props.handleAction(ActionType.SellSome, props.id);
     }
     const balanceText = props.showBalance ? '$' + formatPrice(props.shares * props.price) : '-';
+    const basisText = props.showBalance ? '$' + formatPrice(props.costBasis) : '-';
     // console.log(`Coin: ${JSON.stringify(props)}`);
     return (
         <tr className="coin-row">
@@ -32,6 +33,7 @@ export default function Coin (props) {
             <Td>{props.ticker}</Td>
             <Td>{props.shares}</Td>
             <Td>${formatPrice(props.price)}</Td>
+            <Td>{basisText}</Td>
             <Td>{balanceText}</Td>
             <Td>
                 <div>

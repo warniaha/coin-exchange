@@ -3,6 +3,21 @@ import './CashAvailable.css';
 import { ActionType } from '../ActionType';
 import { formatPrice } from '../../functions/formatPrice'
 
+const cashAvailableFilename = 'PaperCashAvailable';
+
+export const resetCashAvailable = () => {
+    localStorage.removeItem(cashAvailableFilename);
+}
+
+export const saveCashAvailable = (cash) => {
+  localStorage.setItem(cashAvailableFilename, JSON.stringify(cash));
+}
+
+export const readCashAvailable = (setCashAvailable) => {
+  const cash = JSON.parse(localStorage.getItem(cashAvailableFilename));
+  setCashAvailable(cash ?? 0);
+}
+
 export default function CashAvailable (props) {
     const cashText = `Cash Available: $${props.showBalance ? formatPrice(props.amount, 2) : " -"}`;
     const handleClickBuyNew = (event) => {
@@ -30,5 +45,5 @@ export default function CashAvailable (props) {
                 <button className="btn btn-success" disabled={!buyEnabled} onClick={handleClickBuyNew} >Buy</button>
             </div>
         </div>
-    )
+    );
 }

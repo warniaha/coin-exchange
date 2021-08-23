@@ -22,6 +22,7 @@ export default function CoinList (props) {
                 <th>Ticker</th>
                 <th>Shares</th>
                 <th>Price</th>
+                <th>Cost Basis</th>
                 <th>Balance</th>
                 <th>Actions</th>
                 </tr>
