@@ -21,6 +21,14 @@ tr td {
   white-space: nowrap;
 }
 
+.td-action-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
 .App-link {
   color: #61dafb;
 }

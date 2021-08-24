@@ -7,8 +7,9 @@ export default function CoinList (props) {
             // console.log(`CoinList: ${props.coinBalance} ${JSON.stringify(props.coinBalance)}`);
             return props.coinBalance.map( value => 
                 <Coin key={value.key} id={value.key}
-                showBalance={props.showBalance}
-                handleAction={props.handleAction} 
+                    showBalance={props.showBalance}
+                    coinTicker={props.coinTicker}
+                    handleAction={props.handleAction} 
                     {...value} />
             )
         }

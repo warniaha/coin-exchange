@@ -16,12 +16,13 @@ import axios from 'axios';
 import { ActionType } from './components/ActionType';
 import { LoadingState } from './components/LoadingState';
 import { createCoinBalance, saveCoinBalance, readCoinBalance, resetCoinBalance } from './functions/CoinBalance';
-import { getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
+import { createCoinTicker, getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
 
 function App(props) {
   const[balance, setBalance] = React.useState(0);
   const[cashAvailable, setCashAvailable] = React.useState(undefined);
   const[fees, setFees] = React.useState(undefined);
+  const[feeTotal, setFeeTotal] = React.useState(undefined);
   const[showBalance, setShowBalance] = React.useState(false);
   const[coinBalance, setCoinBalance] = React.useState(undefined);  // balances of each coin purchased
   const[isLoadingDialogOpen, setLoadingDialogOpen] = React.useState(LoadingState.Initial);
@@ -224,6 +225,23 @@ function App(props) {
       calculateBalance(newCoinData, cashAvailable);
     }
     console.log(`Updated price of ${foundCoin.ticker} to ${newPrice}`);
+
+    // replace the ticker with the new price
+    const prevTicker = coinTicker.find(coin => coin.key === valueChangeTicker);
+
+    const newMap = coinTicker.map(coin => {
+      if (coin.ticker === foundCoin.ticker) {
+        const theTicker = createCoinTicker(response.data);
+        console.log(`old ticker: ${JSON.stringify(prevTicker)}`);
+        console.log(`new ticker: ${JSON.stringify(theTicker)}`);
+        return theTicker;
+      }
+      else {
+        // console.log(`ticker: ${JSON.stringify(coin)}`);
+        return coin;
+      }
+    })
+    setCoinTicker(newMap);
     return foundCoin;
   }
 
@@ -302,16 +320,15 @@ function App(props) {
     }
     const newCoinBalance = coinBalance.map(coin => {
       if (coin.key === key) {
-        const sellFees = quantity * fees;
-        quantity -= fees;
-        coin.shares -= quantity;
-        coin.costBasis = coin.shares > 0 ? ((coin.shares * coin.costBasis) - quantity) / coin.price : 0;
+        const newShares = coin.shares - quantity / coin.price;
+        coin.costBasis = ((coin.shares * coin.costBasis) - quantity) / newShares;
+        coin.shares = newShares;
       }
       return coin;
     });
     setCoinBalance(newCoinBalance);
     saveCoinBalance(newCoinBalance);
-    const cash = cashAvailable + (quantity * changeCoin.price);
+    const cash = cashAvailable + (quantity * changeCoin.price) - fees;
     setCashAvailable(cash);
     saveCashAvailable(cash);
     calculateBalance(newCoinBalance, cash);
@@ -341,8 +358,9 @@ function App(props) {
     else {
       newCoinBalance = coinBalance.map(coin => {
         if (coin.key === key) {
-          coin.costBasis = ((coin.shares * coin.costBasis) + quantity) / purchaseCoin.price;
-          coin.shares += quantity / purchaseCoin.price;
+          const newShares = quantity / purchaseCoin.price + coin.shares;
+          coin.costBasis = ((coin.shares * coin.costBasis) + quantity) / newShares;
+          coin.shares = newShares;
           if (coin.shares === 0)
             return null;
         }
@@ -420,6 +438,7 @@ function App(props) {
       {/* <FeesBar feesCollected="0" feeRate={fees} /> */}
       <CoinList
         coinBalance={coinBalance} 
+        coinTicker={coinTicker}
         showBalance={showBalance} 
         handleAction={handleAction} />
       <BuyDialog show={isBuyDialogOpen} 
