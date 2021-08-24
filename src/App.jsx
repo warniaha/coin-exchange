@@ -35,6 +35,15 @@ function App(props) {
   const[coinTicker, setCoinTicker] = React.useState(undefined);  // list of coins
   const[quantity, setQuantity] = React.useState(0);     // dialogs quantity
 
+  // 1 second timer used for updating the popup text over the refresh buttons
+  const [seconds, setSeconds] = React.useState(0);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setSeconds(seconds => seconds + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [seconds]);
+
   const closeSettingsDialog = () => {
     setSettingsDialogOpen(false);
   }
