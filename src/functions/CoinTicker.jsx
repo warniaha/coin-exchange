@@ -8,6 +8,7 @@ export const createCoinTicker = (coin) => {
       ticker: coin.symbol,
       price: coin.quotes['USD'].price,
       last_updated: coin.last_updated,
+      last_refresh: coin.last_updated,
     }
 }
 
@@ -25,38 +26,41 @@ export const saveCoinTicker = (values) => {
 export const readCoinTicker = (setCoinTicker) => {
     const coins = JSON.parse(localStorage.getItem(coinListFilename));
     // console.log(coins);
-    setCoinTicker(coins);
+    if (coins)
+        setCoinTicker(coins);
     return coins;
+}
+
+export const getPriceFromTicker = (coinTicker, ticker) => {
+    const coin = coinTicker ? coinTicker.find(item => item.ticker === ticker) : undefined;
+    return coin ? coin.price : "";
 }
 
 const getTickers = async (setCoinTicker) => {
     return await axios.get('https://api.coinpaprika.com/v1/tickers').catch(function(error) {
-        debugger;
         console.log(error);
-        console.log(`getCoinTicker reading old file from computer`);
+        console.log(`getTickers reading old file from computer`);
         return readCoinTicker(setCoinTicker);
     });
 }
 
-export const getCoinTicker = (coinTicker, setCoinTicker) => {
-    if (coinTicker === undefined) {
-        console.log(`getCoinTicker getting token list`);
-        setCoinTicker(null);    // prevent re-entrancy
-        getTickers(setCoinTicker).then(listResponse => {
-            if (listResponse !== undefined) {
-                const tickers = uniqueByKeepFirst(listResponse.data, key => key.symbol);
+export const getCoinTicker = (setCoinTicker, setStatusBarText) => {
+    // console.log(`getCoinTicker getting token list`);
+    getTickers(setCoinTicker).then(listResponse => {
+        if (listResponse !== undefined) {
+            const tickers = uniqueByKeepFirst(listResponse.data, key => key.symbol);
+            if (tickers) {
                 const tickerMap = tickers.map(coin => {
                     return createCoinTicker(coin);
                 })
                 setCoinTicker(tickerMap);
                 saveCoinTicker(tickerMap);
-                return tickerMap;
+                var timestamp = new Date(Date.now());
+                setStatusBarText(`Prices updated at: ${timestamp.toLocaleString()}`);
             }
-        }, reason => {
-            debugger;
-            console.log(`getCoinTicker failed: ${reason}`);
-            setCoinTicker(undefined);    // reset on failure
-        });
-    }
-    return undefined;
+        }
+    }, reason => {
+        setStatusBarText(`Failed to load prices: ${reason}`);
+        console.log(`getCoinTicker failed: ${reason}`);
+    });
 }

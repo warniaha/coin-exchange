@@ -1,6 +1,5 @@
 const ActionType = {
     Settings: "Settings", // settings dialog
-    Refresh: "Refresh", // refresh the price of the coin
     BuyMore: "BuyMore", // but more of shares already owned
     SellSome: "SellSome",   // sell existing shares
     ToggleBalance: "ToggleBalance", // shows/hides the balances

@@ -1,17 +1,17 @@
 import React from 'react'
 import { Modal, Button, Table } from 'react-bootstrap';
 import { ActionType } from '../ActionType';
+import { getPriceFromTicker } from '../../functions/CoinTicker'
 
 export default function SellDialog(props) {
+    const changeCoin = props.coinBalance ? props.coinBalance.find(coin => coin.ticker === props.dialogTicker) : undefined;
     const onSell = (event) => {
-        props.handleAction(ActionType.SellShares, { key: props.changeCoin.key, shares: props.quantity})
+        props.handleAction(ActionType.SellShares, { key: changeCoin.key, shares: props.quantity})
         props.handleClose();
     }
 
-    const key = props.changeCoin ? props.changeCoin.key : null;
-    const refreshButtonEnabled = Boolean(key);
-    const ticker = props.changeCoin ? props.changeCoin.ticker : "";
-    const price = props.changeCoin ? props.changeCoin.price : "";
+    const ticker = changeCoin ? changeCoin.ticker : "";
+    const price = getPriceFromTicker(props.coinTicker, ticker);
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
     const inputClass = (props.modalTextFieldStatus ? "form-control is-valid" : "form-control is-invalid");
     const feedbackClass = (props.modalTextFieldStatus ? "valid-feedback" : "invalid-feedback");
@@ -22,11 +22,6 @@ export default function SellDialog(props) {
     
     const onAll = () => {
         props.onValidator(props.cashSharesAvailable);
-    }
-    
-    const onRefresh = () => {
-        if (key)
-            props.handleAction(ActionType.Refresh, key);
     }
     
     return (
@@ -44,7 +39,7 @@ export default function SellDialog(props) {
                 <tbody>
                     <tr>
                         <th>Coin</th>
-                        <td>{ticker}</td>
+                        <td>{props.dialogTicker}</td>
                     </tr>
                     <tr>
                         <th>Price</th>
@@ -59,11 +54,6 @@ export default function SellDialog(props) {
             <div className="flex-filter">
                 {props.inputTitle}
                 <div>
-                    <Button variant="info" size="sm"
-                        disabled={!refreshButtonEnabled}
-                        onClick={onRefresh}>
-                        Refresh price
-                    </Button>
                     <Button variant="danger" size="sm"
                         onClick={onAll}>
                         All

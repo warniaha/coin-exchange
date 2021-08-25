@@ -10,13 +10,12 @@ import SellDialog from './components/SellDialog/SellDialog';
 import LoadingDialog from './components/LoadingDialog/LoadingDialog';
 import SettingsDialog, {resetSettings } from './components/SettingsDialog/SettingsDialog';
 import 'bootswatch/dist/flatly/bootstrap.min.css';
-import { formatPrice } from './functions/formatPrice'
 import React from 'react';
-import axios from 'axios';
 import { ActionType } from './components/ActionType';
 import { LoadingState } from './components/LoadingState';
 import { createCoinBalance, saveCoinBalance, readCoinBalance, resetCoinBalance } from './functions/CoinBalance';
-import { createCoinTicker, getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
+import { getPriceFromTicker, getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
+import AlertDialog from './components/AlertDialog/AlertDialog';
 
 function App(props) {
   const[balance, setBalance] = React.useState(0);
@@ -30,20 +29,55 @@ function App(props) {
   const[isSellDialogOpen, setSellDialogOpen] = React.useState(false);
   const[isBuyNewDialogOpen, setBuyNewDialogOpen] = React.useState(false);
   const[isSettingsDialogOpen, setSettingsDialogOpen] = React.useState(false);
-  const[changeCoin, setChangeCoin] = React.useState(null);  // coin dialogs operate on
+  const[dialogTicker, setDialogTicker] = React.useState("");  // ticker the dialogs operate on
   const[initialValue, setInitialValue] = React.useState(0);
   const[coinTicker, setCoinTicker] = React.useState(undefined);  // list of coins
   const[quantity, setQuantity] = React.useState(0);     // dialogs quantity
+  const[statusBarText, setStatusBarText] = React.useState("Loading...");
+
+  // alert values
+  const[showAlert, setShowAlert] = React.useState(false);
+  const[alertHeading, setAlertHeading] = React.useState("");
+  const[alertMessage, setAlertMessage] = React.useState("");
+  const[alertButtonAcceptText, setAlertButtonAcceptText] = React.useState("");
+  const[alertAcceptHandler, setAlertAcceptHandler] = React.useState(undefined);
+  const[alertCancelHandler, setAlertCancelHandler] = React.useState(undefined);
+
+  const minutesAsSeconds = (num) => {
+    return num * 60;
+  }
 
   // 1 second timer used for updating the popup text over the refresh buttons
   const [seconds, setSeconds] = React.useState(0);
+  const [lastRefresh, setLastRefresh] = React.useState(0);
   React.useEffect(() => {
+    const isRefreshNeeded = () => {
+      if (!coinTicker)
+        return false;
+      const bitCoin = coinTicker.find(coin => coin.ticker === "BTC");
+      const priceAge = Date.parse(bitCoin.last_updated);
+      const lastRefreshSeconds = (Date.now() - lastRefresh) / 1000;
+      const priceAgeSeconds = (Date.now() - priceAge) / 1000;
+      // console.log(`lastRefreshSeconds: ${lastRefreshSeconds} priceAgeSeconds: ${priceAgeSeconds}`)
+      if (lastRefreshSeconds > minutesAsSeconds(1) &&
+        priceAgeSeconds > minutesAsSeconds(5)) {
+        return true;
+      }
+      return false;
+    }
     const interval = setInterval(() => {
-      setSeconds(seconds => seconds + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [seconds]);
+    setSeconds(seconds => seconds + 1);
+    if (isRefreshNeeded()) {
+      setLastRefresh(Date.now());
+      getCoinTicker(setCoinTicker, setStatusBarText);
+    }
+  }, 1000);
+  return () => clearInterval(interval);
+  }, [seconds, coinTicker, setCoinTicker, lastRefresh, setLastRefresh, setStatusBarText]);
 
+  const closeAlertDialog = () => {
+    setShowAlert(false);
+  }
   const closeSettingsDialog = () => {
     setSettingsDialogOpen(false);
   }
@@ -67,7 +101,7 @@ function App(props) {
       cash !== undefined && cash >= 0) {
       var total = cash;
       bal.forEach(coin => {
-        total += coin.shares * coin.price;
+        total += coin.shares * getPriceFromTicker(coinTicker, coin.ticker);
       });
       setBalance(total);
     }
@@ -76,9 +110,6 @@ function App(props) {
   }
 
   const onReloadLoadingDialog = () => {
-    if (coinTicker === undefined) {
-      getCoinTicker(coinTicker, setCoinTicker);
-    }
     if (coinBalance === undefined) {
       readCoinBalance(setCoinBalance);
     }
@@ -102,9 +133,7 @@ function App(props) {
     if (isLoadingDialogOpen === LoadingState.Initial || forcedReset) {
       setLoadingDialogOpen(LoadingState.Displayed);
     }
-    if (coinTicker === undefined || forcedReset) {
-      getCoinTicker(undefined, setCoinTicker);
-    }
+    getCoinTicker(setCoinTicker, setStatusBarText);
     if (coinBalance === undefined || forcedReset) {
       readCoinBalance(setCoinBalance);
     }
@@ -145,14 +174,14 @@ function App(props) {
   
   const handleBuyMore = async (valueChangeTicker) => {
     const foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
-    setChangeCoin(foundCoin);
+    setDialogTicker(foundCoin.ticker);
     // setup modal
     setActionTitle('Buy');
     setModalTitle(`Buy ${foundCoin.ticker}`);
     setInputTitle(`Spend cash available to purchase ${foundCoin.ticker}`);
     setAvailability('Cash Available');
     setInitialValue(0);
-    setQuantity(0);
+    setQuantity("");
     setModalStatusMessage(buyMustBeGreaterThanZero);
     setModalTextFieldStatus(false);
     setBuyDialogOpen(true);
@@ -176,13 +205,13 @@ function App(props) {
       // console.log(currentCoin);
     }
     updateModalTitles(currentCoin);
-    setChangeCoin(currentCoin);
+    setDialogTicker(currentCoin.ticker);
     return currentCoin;
   }
 
   const handleSellSome = async (valueChangeTicker) => {
     const foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
-    setChangeCoin(foundCoin);
+    setDialogTicker(foundCoin.ticker);
     // setup modal
     setActionTitle('Sell');
     setModalTitle(`Sell ${foundCoin.ticker}`);
@@ -195,9 +224,9 @@ function App(props) {
     setSellDialogOpen(true);
   }
 
-  const handleBuyNew = async (valueChangeTicker) => {
-    const ticker = (changeCoin == null ? "coins" : changeCoin.ticker);
-    console.log(`handleBuyNew`);
+  const handleBuyNew = async () => {
+    const ticker = dialogTicker ?? "coins";
+    // console.log(`handleBuyNew`);
     setActionTitle('Buy');
     setModalTitle(`Buy ${ticker}`);
     setInputTitle(`Spend cash available to purchase ${ticker}`);
@@ -209,70 +238,32 @@ function App(props) {
     setBuyNewDialogOpen(true);
   }
 
-  const updateTickerPrice = async (valueChangeTicker) => {
-    const response = await axios.get(`https://api.coinpaprika.com/v1/tickers/${valueChangeTicker}`);
-    const newPrice = formatPrice(response.data.quotes.USD.price);
-    var foundCoin = coinBalance.find(coin => valueChangeTicker === coin.key);
-    if (foundCoin === undefined) {
-      foundCoin = createCoinBalance(response.data);
-      const newList = [...coinBalance];
-      newList.push(foundCoin);
-      setCoinBalance(newList);
-      saveCoinBalance(newList);
-      calculateBalance(newList, cashAvailable);
-    }
-    else {
-      const newCoinData = coinBalance.map( function( values ) {
-        let newValues = {...values};
-        if (valueChangeTicker === values.key) {
-          newValues.price = newPrice;
-        }
-        return newValues;
-      });
-      setCoinBalance(newCoinData);
-      saveCoinBalance(newCoinData);
-      calculateBalance(newCoinData, cashAvailable);
-    }
-    console.log(`Updated price of ${foundCoin.ticker} to ${newPrice}`);
-
-    // replace the ticker with the new price
-    const prevTicker = coinTicker.find(coin => coin.key === valueChangeTicker);
-
-    const newMap = coinTicker.map(coin => {
-      if (coin.ticker === foundCoin.ticker) {
-        const theTicker = createCoinTicker(response.data);
-        console.log(`old ticker: ${JSON.stringify(prevTicker)}`);
-        console.log(`new ticker: ${JSON.stringify(theTicker)}`);
-        return theTicker;
-      }
-      else {
-        // console.log(`ticker: ${JSON.stringify(coin)}`);
-        return coin;
-      }
-    })
-    setCoinTicker(newMap);
-    return foundCoin;
-  }
-
-  const handleRefresh = async (valueChangeTicker) => {
-    updateTickerPrice(valueChangeTicker).then(result => {
-      // make sure to update the coin for the dialogs
-      setChangeCoin(result);
-    });
-  }
-
   const handleSettings = () => {
     setSettingsDialogOpen(true);
   }
 
-  const handleReset = () => {
+  const resetAllData = () => {
     resetCoinTicker();
     resetCoinBalance();
     resetSettings();
     resetCashAvailable();
     resetFees();
-    setSettingsDialogOpen(false);
     reloadApp();
+    setStatusBarText(`All purchases/deposits have been erased`);
+  }
+
+  const resetCancelled = () => {
+    setSettingsDialogOpen(true);
+  }
+
+  const handleReset = () => {
+    setShowAlert(true);
+    setSettingsDialogOpen(false);
+    setAlertHeading("Erase all data?");
+    setAlertMessage("All of your purchases and deposits will be erased");
+    setAlertButtonAcceptText("Erase");
+    setAlertAcceptHandler({handler: resetAllData});
+    setAlertCancelHandler({handler: resetCancelled});
   }
 
   const handleAction = async (action, actionParameter) => {
@@ -281,16 +272,13 @@ function App(props) {
         handleReset(actionParameter);
         break;
       case ActionType.Settings:
-        handleSettings(actionParameter);
-        break;
-        case ActionType.Refresh:
-        handleRefresh(actionParameter);
+        handleSettings(actionParameter);  // opens SettingsDialog
         break;
       case ActionType.BuyMore:
-        handleBuyMore(actionParameter);
+        handleBuyMore(actionParameter); // opens BuyDialog
         break;
       case ActionType.SellSome:
-        handleSellSome(actionParameter);
+        handleSellSome(actionParameter); // opens SellDialog
         break;
       case ActionType.ToggleBalance:
         toggleBalance(actionParameter);
@@ -302,7 +290,7 @@ function App(props) {
         handleWithdraw(actionParameter);
         break;
       case ActionType.BuyNew:
-        handleBuyNew();
+        handleBuyNew(); // opens BuyNewDialog
         break;
       case ActionType.BuyShares:
         buyShares(actionParameter.key, actionParameter.shares);
@@ -314,9 +302,15 @@ function App(props) {
         throw Object.assign(new Error(`Unexpected action type: ${action}`), { code: 402 });
     }
   }
+
   const sellShares = (key, quantity) => {
+    if (!dialogTicker) {
+      console.log(`Current ticker is null`);
+      return;
+    }
+    const changeCoin = coinBalance.find(coin => coin.ticker === dialogTicker);
     if (!changeCoin) {
-      console.log(`changeCoin is null`);
+      console.log(`${dialogTicker} wasn't found in coinBalance`);
       return;
     }
     if (key !== changeCoin.key) {
@@ -329,19 +323,26 @@ function App(props) {
     }
     const newCoinBalance = coinBalance.map(coin => {
       if (coin.key === key) {
-        const newShares = coin.shares - quantity / coin.price;
-        coin.costBasis = ((coin.shares * coin.costBasis) - quantity) / newShares;
-        coin.shares = newShares;
+        const newShares = coin.shares - quantity;
+        var newCoin = {...coin};
+        newCoin.costBasis = newShares > 0 ? (((coin.shares * coin.costBasis) - quantity) / newShares) : 0;
+        newCoin.shares = newShares;
+        return newCoin;
       }
       return coin;
     });
     setCoinBalance(newCoinBalance);
     saveCoinBalance(newCoinBalance);
-    const cash = cashAvailable + (quantity * changeCoin.price) - fees;
+    const price = getPriceFromTicker(coinTicker, changeCoin.ticker);
+    const cash = cashAvailable + (quantity * price) - fees;
     setCashAvailable(cash);
     saveCashAvailable(cash);
     calculateBalance(newCoinBalance, cash);
+    const statusText = `Sold ${quantity / price} shares of ${changeCoin.ticker} collecting $${quantity}`;
+    setStatusBarText(statusText);
+    console.log(statusText);
   }
+
   const buyShares = (key, quantity) => {
     if (quantity > cashAvailable) {
       console.log(`not enough cach`);
@@ -359,15 +360,15 @@ function App(props) {
       }
       
       purchaseCoin = createCoinBalance(ticker);
-      purchaseCoin.shares = quantity / purchaseCoin.price;
-      purchaseCoin.costBasis = purchaseCoin.price;
+      purchaseCoin.shares = quantity / getPriceFromTicker(coinTicker, purchaseCoin.ticker);
+      purchaseCoin.costBasis = getPriceFromTicker(coinTicker, purchaseCoin.ticker);
       newCoinBalance = [...coinBalance];
       newCoinBalance.push(purchaseCoin);
     }
     else {
       newCoinBalance = coinBalance.map(coin => {
         if (coin.key === key) {
-          const newShares = quantity / purchaseCoin.price + coin.shares;
+          const newShares = quantity / getPriceFromTicker(coinTicker, purchaseCoin.ticker) + coin.shares;
           coin.costBasis = ((coin.shares * coin.costBasis) + quantity) / newShares;
           coin.shares = newShares;
           if (coin.shares === 0)
@@ -382,7 +383,9 @@ function App(props) {
     setCashAvailable(cash);
     saveCashAvailable(cash);
     calculateBalance(newCoinBalance, cash);
-    console.log(`Purchased ${quantity / purchaseCoin.price} of ${purchaseCoin.ticker} spending $${quantity}`)
+    const statusText = `Purchased ${quantity / getPriceFromTicker(coinTicker, purchaseCoin.ticker)} shares of ${purchaseCoin.ticker} spending $${quantity}`;
+    setStatusBarText(statusText);
+    console.log(statusText);
   }
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
   const sellMustBeGreaterThanZero = 'Number of shares to sell must be greater than zero';
@@ -394,6 +397,11 @@ function App(props) {
   const [availability, setAvailability] = React.useState("");
 
   const onModalSellValidator = (value) => {
+    const changeCoin = coinBalance.find(coin => coin.ticker === dialogTicker);
+    if (!changeCoin) {
+      console.log(`${dialogTicker} wasn't found in coinBalance`);
+      return;
+    }
     setQuantity(value);
     const amount = (value === undefined ? 0 : Number(value));
     if (amount <= 0) {
@@ -405,7 +413,8 @@ function App(props) {
       setModalTextFieldStatus(false);
     }
     else {
-      const shares = amount * changeCoin.price;
+      const price = getPriceFromTicker(coinTicker, changeCoin.ticker);
+      const shares = amount * price;
       setModalStatusMessage(`Receive $${shares} for selling ${changeCoin.ticker}`);
       setModalTextFieldStatus(true);
     }
@@ -424,14 +433,19 @@ function App(props) {
       setModalTextFieldStatus(false);
     }
     else {
-      console.log(JSON.stringify(coin));
-      const shares = amount / coin.price;
+      // console.log(JSON.stringify(coin));
+      const shares = amount / getPriceFromTicker(coinTicker, coin.ticker);
       setModalStatusMessage(`Purchase ${shares} of ${coin.ticker}`);
       setModalTextFieldStatus(true);
     }
     updateModalTitles(coin);
   }
 
+  const sharesAvailableForSale = () => {
+    const changeCoin = coinBalance ? coinBalance.find(coin => coin.ticker === dialogTicker) : undefined;
+    return Boolean(!changeCoin) ? 0 : changeCoin.shares;
+  }
+  
   return (
     <div className="App">
       <ExchangeHeader />
@@ -450,9 +464,15 @@ function App(props) {
         coinTicker={coinTicker}
         showBalance={showBalance} 
         handleAction={handleAction} />
+      <div className="status-bar">
+        <div>Status: </div>
+        <div className="status-bar-message">{statusBarText}</div>
+      </div>
       <BuyDialog show={isBuyDialogOpen} 
         cashSharesAvailable={cashAvailable} 
-        changeCoin={changeCoin}
+        dialogTicker={dialogTicker}
+        coinBalance={coinBalance} 
+        coinTicker={coinTicker}
         quantity={quantity}
         initialValue={initialValue}
         modalStatusMessage={modalStatusMessage}
@@ -466,8 +486,10 @@ function App(props) {
         handleAction={handleAction}
         handleClose={closeBuyDialog}/>
       <SellDialog show={isSellDialogOpen} 
-        cashSharesAvailable={changeCoin == null ? 0 : changeCoin.shares} 
-        changeCoin={changeCoin}
+        cashSharesAvailable={sharesAvailableForSale()} 
+        coinBalance={coinBalance} 
+        coinTicker={coinTicker}
+        dialogTicker={dialogTicker}
         quantity={quantity}
         initialValue={initialValue}
         modalStatusMessage={modalStatusMessage}
@@ -481,8 +503,9 @@ function App(props) {
         handleClose={closeSellDialog}/>
       <BuyNewDialog show={isBuyNewDialogOpen}
         cashSharesAvailable={cashAvailable} 
+        coinBalance={coinBalance} 
         coinTicker={coinTicker}
-        changeCoin={changeCoin}
+        dialogTicker={dialogTicker}
         modalStatusMessage={modalStatusMessage}
         modalTextFieldStatus={modalTextFieldStatus}
         onValidator={onModalBuyValidator}
@@ -508,6 +531,14 @@ function App(props) {
         fees={fees}
         handleAction={handleAction}
         handleClose={closeSettingsDialog} />
+      <AlertDialog
+        alertHeading={alertHeading}
+        alertMessage={alertMessage}
+        alertButtonAcceptText={alertButtonAcceptText}
+        alertAcceptHandler={alertAcceptHandler}
+        alertCancelHandler={alertCancelHandler}
+        show={showAlert}
+        handleClose={closeAlertDialog}/>
     </div>
   );
 }

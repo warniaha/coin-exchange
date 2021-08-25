@@ -21,10 +21,22 @@ tr td {
   white-space: nowrap;
 }
 
+.status-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  flex-wrap: nowrap;
+  align-items: left;
+}
+
+.status-bar-message {
+  margin-left: 5px;
+}
+
 .td-action-buttons {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: space-around;
   flex-wrap: nowrap;
   align-items: center;
 }

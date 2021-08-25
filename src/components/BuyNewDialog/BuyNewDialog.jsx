@@ -4,11 +4,12 @@ import CurrencyInput from 'react-currency-input-field';
 import { ActionType } from '../ActionType';
 import './BuyNewDialog.css';
 import { formatPrice } from '../../functions/formatPrice'
-//import Select from 'react-select';
+import { getPriceFromTicker } from '../../functions/CoinTicker'
 
 export default function BuyNewDialog(props) {
+    const changeCoin = props.coinTicker ? props.coinTicker.find(coin => coin.ticker === props.dialogTicker) : undefined;
     const onBuy = (buttonAction) => {
-        props.handleAction(ActionType.BuyShares, { key: props.changeCoin.key, shares: props.quantity})
+        props.handleAction(ActionType.BuyShares, { key: changeCoin.key, shares: props.quantity})
         props.handleClose();
     }
     const onFilterList = (text) => {
@@ -20,21 +21,15 @@ export default function BuyNewDialog(props) {
             return null;
         });
         mapData = mapData.filter(Boolean);
-        const selectedCoin = props.changeCoin ? props.changeCoin.ticker : "";
         // if the filter erases the selection, pick one of the remaining coins
-        const foundList = mapData.find((coin) => coin && selectedCoin === coin.ticker);
+        const foundList = mapData.find((coin) => coin && props.dialogTicker === coin.ticker);
         if (!foundList && mapData.length > 0) {
             selectCoin(mapData[0].ticker);
         }
     }
 
     const onAll = () => {
-        props.onValidator(props.cashSharesAvailable);
-    }
-    
-    const onRefresh = () => {
-        if (key)
-            props.handleAction(ActionType.Refresh, key);
+        props.onValidator({quantity: props.cashSharesAvailable, coin: changeCoin});
     }
     
     const handleCancel = () => {
@@ -44,7 +39,7 @@ export default function BuyNewDialog(props) {
         props.onValidator({quantity: quantity, coin: coin});
     }
     const onValidator = (value) => {
-        callValidator(value, props.changeCoin);
+        callValidator(value, changeCoin);
     }
     const onSelectCoin = (control) => {
         selectCoin(control.target.value);
@@ -63,8 +58,6 @@ export default function BuyNewDialog(props) {
         if (props.coinTicker !== undefined && props.show === true) {
             const mapData = props.coinTicker.map (coin => {
                 if (matchesFilter(coin, text)) {
-                    if (props.changeCoin && coin.ticker === props.changeCoin.ticker){
-                    }
                     // console.log(`<option key=${coin.ticker} value=${coin.ticker} >${coin.ticker}</option>`)
                     return <option key={coin.ticker} value={coin.ticker}  >{coin.ticker}</option>
                 }
@@ -77,16 +70,12 @@ export default function BuyNewDialog(props) {
         return null;
     }
 
-    const key = props.changeCoin ? props.changeCoin.key : null;
-    const refreshButtonEnabled = Boolean(key);
-    const ticker = props.changeCoin ? props.changeCoin.ticker : "";
-    const price = props.changeCoin ? formatPrice(props.changeCoin.price) : "";
+    const price = changeCoin ? formatPrice(getPriceFromTicker(props.coinTicker, changeCoin.ticker)) : "";
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
     const inputClass = (props.modalTextFieldStatus ? "form-control is-valid" : "form-control is-invalid");
     const feedbackClass = (props.modalTextFieldStatus ? "valid-feedback" : "invalid-feedback");
     const [filter, setFilter] = React.useState("");
-    const currencyInputEnabled = props.changeCoin ? true : false;
-    const selectedCoin = props.changeCoin ? props.changeCoin.ticker : "";
+    const currencyInputEnabled = changeCoin ? true : false;
     return (
         <Modal
             show={props.show}
@@ -113,7 +102,7 @@ export default function BuyNewDialog(props) {
                 <select className="form-select" 
                     id="filter-select" 
                     onChange={onSelectCoin}
-                    value={selectedCoin}
+                    value={props.dialogTicker}
                     placeholder="Select ticker name...">
                     {filterCoins(filter)}
                 </select>
@@ -122,7 +111,7 @@ export default function BuyNewDialog(props) {
                     <tbody>
                         <tr>
                             <th>Coin</th>
-                            <td>{ticker}</td>
+                            <td>{props.dialogTicker}</td>
                         </tr>
                         <tr>
                             <th>Price</th>
@@ -137,11 +126,6 @@ export default function BuyNewDialog(props) {
                 <div className="flex-filter">
                 {props.inputTitle}
                 <div>
-                    <Button variant="info" size="sm"
-                        disabled={!refreshButtonEnabled}
-                        onClick={onRefresh}>
-                        Refresh price
-                    </Button>
                     <Button variant="danger" size="sm"
                         onClick={onAll}>
                         All
@@ -156,6 +140,7 @@ export default function BuyNewDialog(props) {
                         placeholder="Please enter a dollar amount"
                         decimalsLimit={18}
                         allowNegativeValue="false"
+                        value={props.quantity}
                         defaultValue={props.initialValue}
                         disabled={!currencyInputEnabled}
                         prefix={props.prefix}

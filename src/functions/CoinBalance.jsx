@@ -4,7 +4,6 @@ export const createCoinBalance = (coin) => {
         name: coin.name,
         ticker: coin.ticker,
         shares: 0,
-        price: coin.price,
         costBasis: 0,
     }
 }

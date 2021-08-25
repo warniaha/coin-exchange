@@ -2,30 +2,24 @@ import React from 'react'
 import { Modal, Button, Table } from 'react-bootstrap';
 import CurrencyInput from 'react-currency-input-field';
 import { ActionType } from '../ActionType';
+import { getPriceFromTicker } from '../../functions/CoinTicker'
 
 export default function BuyDialog(props) {
+    const changeCoin = props.coinBalance ? props.coinBalance.find(coin => coin.ticker === props.dialogTicker) : undefined;
     const onBuy = (button) => {
-        props.handleAction(ActionType.BuyShares, { key: props.changeCoin.key, shares: props.quantity})
+        props.handleAction(ActionType.BuyShares, { key: changeCoin.key, shares: props.quantity})
         // console.log('buy: ', quantity);
         props.handleClose();
     }
 
-    const key = props.changeCoin ? props.changeCoin.key : null;
-    const refreshButtonEnabled = Boolean(key);
-    const ticker = props.changeCoin ? props.changeCoin.ticker : "";
-    const price = props.changeCoin ? props.changeCoin.price : "";
+    const ticker = props.dialogTicker ?? "";
+    const price = getPriceFromTicker(props.coinTicker, ticker);
     const divClass = (props.modalTextFieldStatus ? "form-group has-success" : "form-group has-danger");
     const inputClass = (props.modalTextFieldStatus ? "form-control is-valid" : "form-control is-invalid");
     const feedbackClass = (props.modalTextFieldStatus ? "valid-feedback" : "invalid-feedback");
 
     const onAll = () => {
-        props.onValidator({quantity: props.cashSharesAvailable, coin: props.changeCoin});
-    }
-    
-    const onRefresh = () => {
-        if (key) {
-            props.handleAction(ActionType.Refresh, key);
-        }
+        props.onValidator({quantity: props.cashSharesAvailable, coin: changeCoin});
     }
     
     const handleCancel = () => {
@@ -36,7 +30,7 @@ export default function BuyDialog(props) {
         props.onValidator({quantity: quantity, coin: coin});
     }
     const onValidator = (value) => {
-        callValidator(value, props.changeCoin);
+        callValidator(value, changeCoin);
     }
     return (
         <Modal
@@ -68,11 +62,6 @@ export default function BuyDialog(props) {
             <div className="flex-filter">
                 {props.inputTitle}
                 <div>
-                    <Button variant="info" size="sm"
-                        disabled={!refreshButtonEnabled}
-                        onClick={onRefresh}>
-                        Refresh price
-                    </Button>
                     <Button variant="danger" size="sm"
                         onClick={onAll}>
                         All
@@ -87,6 +76,7 @@ export default function BuyDialog(props) {
                     placeholder="Please enter a dollar amount"
                     decimalsLimit={18}
                     allowNegativeValue="false"
+                    value={props.quantity}
                     defaultValue={props.initialValue}
                     prefix={props.prefix}
                     intlConfig={{ locale: 'en-US', currency: 'USD' }}

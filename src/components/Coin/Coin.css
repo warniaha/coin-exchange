@@ -5,3 +5,9 @@
     flex-wrap: nowrap;
     align-items: center;
 }
+.price-profit {
+    color: lightgreen;
+}
+.price-loss {
+    color: tomato;
+}
