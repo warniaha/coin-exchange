@@ -8,6 +8,7 @@ const ActionType = {
     BuyNew: "BuyNew",   // list coins not owned to purchase dialog
     BuyShares: "BuyShares",  // action resulting from clicking the Buy button
     SellShares: "SellShares",  // action resulting from clicking the Sell button
+    SaveSettings: "SaveSettings",   // save settings from the SettingsDialog
 }
 
 export { ActionType };

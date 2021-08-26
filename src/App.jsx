@@ -1,26 +1,29 @@
+// NavBar example: https://stackoverflow.com/questions/51486024/bootstrap-navbar-with-react
+
 import './App.css';
 import AccountBalance from './components/AccountBalance/AccountBalance';
 import CoinList from './components/CoinList/CoinList';
-import FeesBar, { resetFees, saveFees, readFees } from './components/FeesBar/FeesBar';
+import FeesBar from './components/FeesBar/FeesBar';
 import ExchangeHeader from './components/ExchangeHeader/ExchangeHeader';
-import CashAvailable, { resetCashAvailable, saveCashAvailable, readCashAvailable } from './components/CashAvailable/CashAvailable';
+import CashAvailable from './components/CashAvailable/CashAvailable';
 import BuyDialog from './components/BuyDialog/BuyDialog';
 import BuyNewDialog from './components/BuyNewDialog/BuyNewDialog';
 import SellDialog from './components/SellDialog/SellDialog';
 import LoadingDialog from './components/LoadingDialog/LoadingDialog';
-import SettingsDialog, {resetSettings } from './components/SettingsDialog/SettingsDialog';
+import SettingsDialog from './components/SettingsDialog/SettingsDialog';
 import 'bootswatch/dist/flatly/bootstrap.min.css';
 import React from 'react';
 import { ActionType } from './components/ActionType';
 import { LoadingState } from './components/LoadingState';
 import { createCoinBalance, saveCoinBalance, readCoinBalance, resetCoinBalance } from './functions/CoinBalance';
+import { saveSettings, readSettings, resetSettings } from './functions/Settings';
 import { getPriceFromTicker, getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
 import AlertDialog from './components/AlertDialog/AlertDialog';
 
 function App(props) {
   const[balance, setBalance] = React.useState(0);
   const[cashAvailable, setCashAvailable] = React.useState(undefined);
-  const[fees, setFees] = React.useState(undefined);
+  const[feeRate, setFeeRate] = React.useState(undefined);
   const[feeTotal, setFeeTotal] = React.useState(undefined);
   const[showBalance, setShowBalance] = React.useState(false);
   const[coinBalance, setCoinBalance] = React.useState(undefined);  // balances of each coin purchased
@@ -111,13 +114,8 @@ function App(props) {
 
   const onReloadLoadingDialog = () => {
     if (coinBalance === undefined) {
-      readCoinBalance(setCoinBalance);
-    }
-    if (cashAvailable === undefined) {
-      readCashAvailable(setCashAvailable);
-    }
-    if (fees === undefined) {
-      readFees(setFees);
+      readCoinBalance({ balance: setCoinBalance, cash: setCashAvailable, feesPaid: setFeeTotal });
+      readSettings({ feeRate: setFeeRate });
     }
   }
 
@@ -125,7 +123,7 @@ function App(props) {
     setCoinTicker(undefined);
     setCoinBalance(undefined);
     setCashAvailable(undefined);
-    setFees(undefined);
+    setFeeRate(undefined);
     componentDidMount(true);
   }
 
@@ -135,13 +133,10 @@ function App(props) {
     }
     getCoinTicker(setCoinTicker, setStatusBarText);
     if (coinBalance === undefined || forcedReset) {
-      readCoinBalance(setCoinBalance);
+      readCoinBalance({ balance: setCoinBalance, cash: setCashAvailable, feesPaid: setFeeTotal });
     }
-    if (cashAvailable === undefined || forcedReset) {
-      readCashAvailable(setCashAvailable);
-    }
-    if (fees === undefined || forcedReset) {
-      readFees(setFees);
+    if (feeRate === undefined || forcedReset) {
+      readSettings({ feeRate: setFeeRate });
     }
   }
 
@@ -159,7 +154,7 @@ function App(props) {
   const handleDeposit = async (value) => {
     const total = cashAvailable + value;
     setCashAvailable(total);
-    saveCashAvailable(total);
+    saveCoinBalance({ balance: coinBalance, cash: total, feesPaid: feeTotal });
     calculateBalance(coinBalance, total);
   }
 
@@ -167,7 +162,7 @@ function App(props) {
     if (cashAvailable >= value) {
       const total = cashAvailable - value;
       setCashAvailable(total);
-      saveCashAvailable(total);
+      saveCoinBalance({ balance: coinBalance, cash: total, feesPaid: feeTotal });
       calculateBalance(coinBalance, total);
     }
   }
@@ -240,14 +235,13 @@ function App(props) {
 
   const handleSettings = () => {
     setSettingsDialogOpen(true);
+    setQuantity(feeRate);
   }
 
   const resetAllData = () => {
     resetCoinTicker();
     resetCoinBalance();
     resetSettings();
-    resetCashAvailable();
-    resetFees();
     reloadApp();
     setStatusBarText(`All purchases/deposits have been erased`);
   }
@@ -273,6 +267,10 @@ function App(props) {
         break;
       case ActionType.Settings:
         handleSettings(actionParameter);  // opens SettingsDialog
+        break;
+      case ActionType.SaveSettings:
+        setFeeRate(actionParameter.feeRate);  // saves settings
+        saveSettings({ feeRate: actionParameter.feeRate });
         break;
       case ActionType.BuyMore:
         handleBuyMore(actionParameter); // opens BuyDialog
@@ -321,26 +319,31 @@ function App(props) {
       console.log(`not enough ${changeCoin.ticker}`);
       return;
     }
+    const price = getPriceFromTicker(coinTicker, changeCoin.ticker);
+    var cost = quantity * price;
+    const sellFees = cost * feeRate;
+    // cost -= sellFees;
+    // const sellQuantity = cost / price;
     const newCoinBalance = coinBalance.map(coin => {
       if (coin.key === key) {
         const newShares = coin.shares - quantity;
         var newCoin = {...coin};
-        newCoin.costBasis = newShares > 0 ? (((coin.shares * coin.costBasis) - quantity) / newShares) : 0;
+        newCoin.costBasis = newShares > 0 ? (((coin.shares * coin.costBasis) - (quantity + sellFees)) / newShares) : 0;
         newCoin.shares = newShares;
         return newCoin;
       }
       return coin;
     });
-    setCoinBalance(newCoinBalance);
-    saveCoinBalance(newCoinBalance);
-    const price = getPriceFromTicker(coinTicker, changeCoin.ticker);
-    const cash = cashAvailable + (quantity * price) - fees;
+    const cash = cashAvailable + (quantity * price) - sellFees;
+    const totalFeesPaid = feeTotal + sellFees;
     setCashAvailable(cash);
-    saveCashAvailable(cash);
     calculateBalance(newCoinBalance, cash);
-    const statusText = `Sold ${quantity / price} shares of ${changeCoin.ticker} collecting $${quantity}`;
+    const statusText = `Sold ${quantity / price} shares of ${changeCoin.ticker} collecting $${quantity} paying $${sellFees} in fees`;
+    setFeeTotal(totalFeesPaid);
     setStatusBarText(statusText);
     console.log(statusText);
+    setCoinBalance(newCoinBalance);
+    saveCoinBalance({ balance: newCoinBalance, cash: cash, feesPaid: totalFeesPaid });
   }
 
   const buyShares = (key, quantity) => {
@@ -349,7 +352,8 @@ function App(props) {
       return;
     }
     var newCoinBalance;
-    var buyFees = quantity * fees;
+    var buyFees = quantity * feeRate;
+    var price;
     quantity -= buyFees;
     var purchaseCoin = coinBalance.find(coin => key === coin.key);
     if (!purchaseCoin) {
@@ -360,15 +364,17 @@ function App(props) {
       }
       
       purchaseCoin = createCoinBalance(ticker);
-      purchaseCoin.shares = quantity / getPriceFromTicker(coinTicker, purchaseCoin.ticker);
-      purchaseCoin.costBasis = getPriceFromTicker(coinTicker, purchaseCoin.ticker);
+      price = getPriceFromTicker(coinTicker, purchaseCoin.ticker);
+      purchaseCoin.shares = quantity / price;
+      purchaseCoin.costBasis = price;
       newCoinBalance = [...coinBalance];
       newCoinBalance.push(purchaseCoin);
     }
     else {
+      price = getPriceFromTicker(coinTicker, purchaseCoin.ticker);
       newCoinBalance = coinBalance.map(coin => {
         if (coin.key === key) {
-          const newShares = quantity / getPriceFromTicker(coinTicker, purchaseCoin.ticker) + coin.shares;
+          const newShares = quantity / price + coin.shares;
           coin.costBasis = ((coin.shares * coin.costBasis) + quantity) / newShares;
           coin.shares = newShares;
           if (coin.shares === 0)
@@ -377,16 +383,18 @@ function App(props) {
         return coin;
       });
     }
-    setCoinBalance(newCoinBalance);
-    saveCoinBalance(newCoinBalance);
-    const cash = cashAvailable - quantity;
+    const cash = cashAvailable - (quantity + buyFees);
+    const totalFeesPaid = feeTotal + buyFees;
+    setFeeTotal(totalFeesPaid);
     setCashAvailable(cash);
-    saveCashAvailable(cash);
     calculateBalance(newCoinBalance, cash);
-    const statusText = `Purchased ${quantity / getPriceFromTicker(coinTicker, purchaseCoin.ticker)} shares of ${purchaseCoin.ticker} spending $${quantity}`;
+    const statusText = `Purchased ${quantity / price} shares of ${purchaseCoin.ticker} spending $${quantity} paying $${buyFees} in fees`;
     setStatusBarText(statusText);
     console.log(statusText);
+    setCoinBalance(newCoinBalance);
+    saveCoinBalance({ balance: newCoinBalance, cash: cash, feesPaid: totalFeesPaid });
   }
+
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
   const sellMustBeGreaterThanZero = 'Number of shares to sell must be greater than zero';
   const [modalStatusMessage, setModalStatusMessage] = React.useState("");
@@ -396,6 +404,9 @@ function App(props) {
   const [actionTitle, setActionTitle] = React.useState("");
   const [availability, setAvailability] = React.useState("");
 
+  const onSettingsValidator = (value) => {
+    setQuantity(value.feeRate);
+  }
   const onModalSellValidator = (value) => {
     const changeCoin = coinBalance.find(coin => coin.ticker === dialogTicker);
     if (!changeCoin) {
@@ -458,7 +469,7 @@ function App(props) {
         coinTicker={coinTicker}
         showBalance={showBalance}
         amount={cashAvailable} />
-      {/* <FeesBar feesCollected="0" feeRate={fees} /> */}
+      <FeesBar feesCollected={feeTotal} feeRate={feeRate} />
       <CoinList
         coinBalance={coinBalance} 
         coinTicker={coinTicker}
@@ -520,15 +531,15 @@ function App(props) {
       <LoadingDialog show={isLoadingDialogOpen === LoadingState.Displayed}
         coinBalance={coinBalance}
         coinTicker={coinTicker}
-        cashAvailable={cashAvailable}
-        fees={fees}
+        settings={{feeRate: feeRate}}
         modalTitle="Loading values"
         handleReload={onReloadLoadingDialog}
         handleClose={closeLoadingDialog}/>
       <SettingsDialog show={isSettingsDialogOpen} 
         modalTitle="Settings"
         inputTitle="Paper Coin Exchange Settings"
-        fees={fees}
+        settings={{feeRate: quantity}}
+        onValidator={onSettingsValidator}
         handleAction={handleAction}
         handleClose={closeSettingsDialog} />
       <AlertDialog

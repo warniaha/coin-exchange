@@ -6,7 +6,7 @@ import { getPriceFromTicker } from '../../functions/CoinTicker'
 export default function SellDialog(props) {
     const changeCoin = props.coinBalance ? props.coinBalance.find(coin => coin.ticker === props.dialogTicker) : undefined;
     const onSell = (event) => {
-        props.handleAction(ActionType.SellShares, { key: changeCoin.key, shares: props.quantity})
+        props.handleAction(ActionType.SellShares, { key: changeCoin.key, shares: props.quantity});
         props.handleClose();
     }
 

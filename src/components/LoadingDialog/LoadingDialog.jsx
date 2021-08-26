@@ -11,20 +11,14 @@ export default function LoadingDialog(props) {
             {loadingMessage(status)}
         </div>
     }
-    const feesStatus = () => {
-        const status = props.fees !== undefined;
+    const settingsStatus = () => {
+        const status = props.settings.feeRate !== undefined;
         return <div>
             {loadingMessage(status)}
         </div>
     }
     const tickersStatus = () => {
         const status = Boolean(props.coinTicker);
-        return <div>
-            {loadingMessage(status)}
-        </div>
-    }
-    const cashAvailableStatus = () => {
-        const status = (props.cashAvailable !== undefined && props.cashAvailable >= 0);
         return <div>
             {loadingMessage(status)}
         </div>
@@ -42,8 +36,7 @@ export default function LoadingDialog(props) {
             setSeconds(seconds => seconds + 1);
             if (Boolean(props.coinBalance) &&
                 Boolean(props.coinTicker) &&
-                props.fees !== undefined &&
-                (props.cashAvailable !== undefined && props.cashAvailable >= 0)) {
+                props.settings.feeRate !== undefined) {
                 props.handleClose();
                 setSeconds(0);
             }}, 1000);
@@ -78,18 +71,10 @@ export default function LoadingDialog(props) {
                             </td>
                         </tr>
                         <tr>
-                            <th>Cash Available</th>
+                            <th>Settings</th>
                             <td>
                                 <div>
-                                    {cashAvailableStatus()}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Fees</th>
-                            <td>
-                                <div>
-                                    {feesStatus()}
+                                    {settingsStatus()}
                                 </div>
                             </td>
                         </tr>

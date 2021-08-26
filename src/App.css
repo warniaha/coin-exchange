@@ -30,6 +30,7 @@ tr td {
 }
 
 .status-bar-message {
+  font-style: italic;
   margin-left: 5px;
 }
 

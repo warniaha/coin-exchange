@@ -2,12 +2,6 @@ import React from 'react'
 import { Modal, Button, Table } from 'react-bootstrap';
 import { ActionType } from '../ActionType';
 
-const settingsFilename = "PaperSettings";
-
-export const resetSettings = () => {
-    localStorage.removeItem(settingsFilename);
-}
-
 export default function SettingsDialog(props) {
 
     const handleCancel = () => {
@@ -16,16 +10,13 @@ export default function SettingsDialog(props) {
     
     const onSave = () => {
         props.handleClose();
+        props.handleAction(ActionType.SaveSettings, { feeRate: props.settings.feeRate });
     }
     
     const onReset = () => {
         props.handleAction(ActionType.Reset);
     }
 
-    const onValidator = () => {
-        throw Object.assign(new Error(`SettingsDialog.onValidator() Not coded yet`), { code: 402 });
-    }
-    
     return (
         <Modal
             show={props.show}
@@ -45,10 +36,10 @@ export default function SettingsDialog(props) {
                             <input type="text"
                                 className="form-control" 
                                 id="text-input" 
-                                value={props.fees}
+                                value={props.settings.feeRate}
                                 name="input-name"
                                 placeholder="Enter percentage that should be collected in fees"
-                                onChange={(event) => onValidator(event.target.value)}/>
+                                onChange={(event) => props.onValidator({feeRate: event.target.value})}/>
                         </td>
                     </tr>
                 </tbody>
