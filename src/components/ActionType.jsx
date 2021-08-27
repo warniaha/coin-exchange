@@ -9,6 +9,7 @@ const ActionType = {
     BuyShares: "BuyShares",  // action resulting from clicking the Buy button
     SellShares: "SellShares",  // action resulting from clicking the Sell button
     SaveSettings: "SaveSettings",   // save settings from the SettingsDialog
+    Help: "Help",   // Show the help window
 }
 
 export { ActionType };

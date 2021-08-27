@@ -22,11 +22,11 @@ export default function Coin (props) {
         props.handleAction(ActionType.SellSome, props.id);
     }
     const price = getPriceFromTicker(props.coinTicker, props.ticker);
-    const balance = props.shares * price;
-    const profit = balance - (props.shares * props.costBasis);
+    const netBalance = props.shares * price;
+    const profit = netBalance - (props.shares * props.costBasis);
     const profitLossClass = profit >= 0 ? "price-profit" : "price-loss"
     const arrowCharacter = profit >= 0 ? "▲" : "▼";
-    const balanceText = props.showBalance ? '$' + formatPrice(balance) : arrowCharacter;
+    const balanceText = props.showBalance ? '$' + formatPrice(netBalance) : arrowCharacter;
     const basisText = props.showBalance ? '$' + formatPrice(props.costBasis) : '-';
     const buyPopupText = `Buy more ${props.ticker}`;
     const sellPopupText = `Sell your ${props.ticker}`;

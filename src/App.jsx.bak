@@ -112,7 +112,7 @@ function App(props) {
 
   const onReloadLoadingDialog = () => {
     if (coinBalance === undefined) {
-      readCoinBalance({ balance: setCoinBalance, cash: setCashAvailable, feesPaid: setFeeTotal });
+      readCoinBalance({ netBalance: setCoinBalance, cash: setCashAvailable, feesPaid: setFeeTotal });
       readSettings({ feeRate: setFeeRate });
     }
   }
@@ -131,7 +131,7 @@ function App(props) {
     }
     getCoinTicker(setCoinTicker, setStatusBarText);
     if (coinBalance === undefined || forcedReset) {
-      readCoinBalance({ balance: setCoinBalance, cash: setCashAvailable, feesPaid: setFeeTotal });
+      readCoinBalance({ netBalance: setCoinBalance, cash: setCashAvailable, feesPaid: setFeeTotal });
     }
     if (feeRate === undefined || forcedReset) {
       readSettings({ feeRate: setFeeRate });
@@ -152,7 +152,7 @@ function App(props) {
   const handleDeposit = async (value) => {
     const total = cashAvailable + value;
     setCashAvailable(total);
-    saveCoinBalance({ balance: coinBalance, cash: total, feesPaid: feeTotal });
+    saveCoinBalance({ netBalance: coinBalance, cash: total, feesPaid: feeTotal });
     calculateBalance(coinBalance, total);
   }
 
@@ -160,7 +160,7 @@ function App(props) {
     if (cashAvailable >= value) {
       const total = cashAvailable - value;
       setCashAvailable(total);
-      saveCoinBalance({ balance: coinBalance, cash: total, feesPaid: feeTotal });
+      saveCoinBalance({ netBalance: coinBalance, cash: total, feesPaid: feeTotal });
       calculateBalance(coinBalance, total);
     }
   }
@@ -348,7 +348,7 @@ function App(props) {
     setStatusBarText(statusText);
     console.log(statusText);
     setCoinBalance(newCoinBalance);
-    saveCoinBalance({ balance: newCoinBalance, cash: cash, feesPaid: totalFeesPaid });
+    saveCoinBalance({ netBalance: newCoinBalance, cash: cash, feesPaid: totalFeesPaid });
   }
 
   const buyShares = (key, quantity) => {
@@ -397,7 +397,7 @@ function App(props) {
     setStatusBarText(statusText);
     console.log(statusText);
     setCoinBalance(newCoinBalance);
-    saveCoinBalance({ balance: newCoinBalance, cash: cash, feesPaid: totalFeesPaid });
+    saveCoinBalance({ netBalance: newCoinBalance, cash: cash, feesPaid: totalFeesPaid });
   }
 
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';

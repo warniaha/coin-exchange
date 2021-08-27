@@ -1,6 +1,6 @@
 .App {
   text-align: center;
-  background-color: rgb(9, 79, 209);
+  background-color: #3c4658;
   color: #cccccc
 }
 
@@ -27,6 +27,14 @@ tr td {
   justify-content: left;
   flex-wrap: nowrap;
   align-items: left;
+}
+
+.button-toolbar-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .status-bar-message {
