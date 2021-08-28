@@ -11,7 +11,7 @@ import { nobodyLooking, pryingEyes } from '../../functions/StringTable';
 
 export default function HelpDialog(props) {
     const [key, setKey] = React.useState(0);
-    const tabsList = ["deposit", "showBalance", "buy"];
+    const tabsList = ["deposit", "showBalance", "prices", "buy"];
 
     const handleShowHideBalance = (event) => {
         event.preventDefault();
@@ -92,6 +92,11 @@ export default function HelpDialog(props) {
                                     text={netBalance}
                                     disabled={false} />
                             </div>
+                        </div>
+                    </Tab>
+                    <Tab eventKey="prices" title="Price">
+                        <div className="wrap-content" >
+                            <div>Price are automatically updated every 5 minutes while an internet connection is available.  When an internet connection is not available, a cached version of the prices will be used</div>
                         </div>
                     </Tab>
                     <Tab eventKey="buy" title="Buy">

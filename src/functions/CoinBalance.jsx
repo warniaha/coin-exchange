@@ -18,14 +18,14 @@ export const saveCoinBalance = (values) => {
   const balances = values.balance.filter(coin => coin && !isNaN(coin.shares) && coin.shares > 0);
   const balanceJson = JSON.stringify({ balance: balances, totalDeposits: values.totalDeposits, cash: values.cash, feesPaid: values.feesPaid });
   localStorage.setItem(coinBalanceFilename, balanceJson);
-  console.log(`balances: ${balanceJson}`);
+  // console.log(`balances: ${balanceJson}`);
 }
 
 export const readCoinBalance = (setters) => {
   setters.balance(null);
   const jsonValues = localStorage.getItem(coinBalanceFilename);
   const parsedValues = JSON.parse(jsonValues);
-  console.log(`readCoinBalance: jsonValues: ${jsonValues}`)
+  // console.log(`readCoinBalance: jsonValues: ${jsonValues}`)
 
   var balances = [];
   var cash = 0;

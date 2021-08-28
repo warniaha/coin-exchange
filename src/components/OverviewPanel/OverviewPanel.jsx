@@ -54,7 +54,6 @@ export default function OverviewPanel(props) {
         props.handleAction(ActionType.Reset);
     }
 
-
     const profit = props.netBalance - props.totalDeposits;
     const profitLossClass = profit >= 0 ? "price-profit" : "price-loss"
     const arrowCharacter = profit >= 0 ? "▲" : "▼";

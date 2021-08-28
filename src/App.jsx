@@ -52,13 +52,17 @@ function App(props) {
     return num * 60;
   }
 
-  const calculateBalance = (bal = coinBalance, cash = cashAvailable) => {
+  // 1 second timer used for updating the popup text over the refresh buttons
+  const [seconds, setSeconds] = React.useState(0);
+  const [lastRefresh, setLastRefresh] = React.useState(0);
+
+  const calculateBalance = React.useCallback((bal = coinBalance, cash = cashAvailable, ticker = coinTicker) => { 
     if (typeof(coinTicker) == "object" &&
       typeof(bal) == "object" &&
       cash !== undefined && cash >= 0) {
       var totalAvailable = cash;
       bal.forEach(coin => {
-        totalAvailable += coin.shares * getPriceFromTicker(coinTicker, coin.ticker);
+        totalAvailable += coin.shares * getPriceFromTicker(ticker, coin.ticker);
       });
       if (totalAvailable !== netBalance)
         setNetBalance(totalAvailable);
@@ -66,11 +70,8 @@ function App(props) {
     else
       if (0 !== netBalance)
         setNetBalance(0);
-  }
+  }, [coinBalance, cashAvailable, coinTicker, netBalance]);
 
-  // 1 second timer used for updating the popup text over the refresh buttons
-  const [seconds, setSeconds] = React.useState(0);
-  const [lastRefresh, setLastRefresh] = React.useState(0);
   React.useEffect(() => {
     const isRefreshNeeded = () => {
       if (!coinTicker)
@@ -79,7 +80,6 @@ function App(props) {
       const priceAge = Date.parse(bitCoin.last_updated);
       const lastRefreshSeconds = (Date.now() - lastRefresh) / 1000;
       const priceAgeSeconds = (Date.now() - priceAge) / 1000;
-      // console.log(`lastRefreshSeconds: ${lastRefreshSeconds} priceAgeSeconds: ${priceAgeSeconds}`)
       if (lastRefreshSeconds > minutesAsSeconds(1) &&
         priceAgeSeconds > minutesAsSeconds(5)) {
         return true;
@@ -428,7 +428,12 @@ function App(props) {
   const onSettingsValidator = (value) => {
     setQuantity(value.feeRate);
   }
-  const onModalSellValidator = (value) => {
+  const onModalSellValidator = (dollarAmount) => {
+    var value = dollarAmount;
+    if (typeof(dollarAmount) === "string") {
+      value = dollarAmount.replace(/[^\d.-]/g, ''); // remove non-digits like $ or ,
+    }
+
     const changeCoin = coinBalance.find(coin => coin.ticker === dialogTicker);
     if (!changeCoin) {
       console.log(`${dialogTicker} wasn't found in coinBalance`);

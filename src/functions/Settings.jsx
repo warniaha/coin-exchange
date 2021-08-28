@@ -14,7 +14,7 @@ export const saveSettings = (values) => {
 export const readSettings = (setters) => {
   const jsonValues = localStorage.getItem(settingsFilename);
   const parsedValues = JSON.parse(jsonValues);
-  console.log(`readSettings: jsonValues: ${jsonValues}`)
+  // console.log(`readSettings: jsonValues: ${jsonValues}`)
 
   var feeRate = 0;
 
