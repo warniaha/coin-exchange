@@ -50,6 +50,23 @@ tr td {
   align-items: center;
 }
 
+.wrap-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.right-margin {
+  margin-right: 5px;
+}
+
+.right-left-margin {
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
 .App-link {
   color: #61dafb;
 }

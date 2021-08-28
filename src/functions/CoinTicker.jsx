@@ -44,7 +44,7 @@ const getTickers = async (setCoinTicker) => {
     });
 }
 
-export const getCoinTicker = (setCoinTicker, setStatusBarText) => {
+export const getCoinTicker = (setCoinTicker, setStatusBarText, calculateBalance) => {
     // console.log(`getCoinTicker getting token list`);
     getTickers(setCoinTicker).then(listResponse => {
         if (listResponse !== undefined) {
@@ -57,6 +57,7 @@ export const getCoinTicker = (setCoinTicker, setStatusBarText) => {
                 saveCoinTicker(tickerMap);
                 var timestamp = new Date(Date.now());
                 setStatusBarText(`Prices updated at: ${timestamp.toLocaleString()}`);
+                calculateBalance();
             }
         }
     }, reason => {

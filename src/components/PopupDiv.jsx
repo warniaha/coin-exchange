@@ -1,11 +1,9 @@
 import React from 'react'
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover'
-import Button from 'react-bootstrap/Button';
 
-export default function PopupButton (props) {
+export default function PopupDiv (props) {
     const divStyle = props.disabled ? {display: 'inline-block', cursor: 'not-allowed'} : {};
-    const buttonStyle = props.disabled ? {pointerEvents : 'none'} : {};
     return (
         <OverlayTrigger
             placement="top"
@@ -18,13 +16,7 @@ export default function PopupButton (props) {
                 </Popover>
             )}>
             <div style={divStyle}>
-                <Button 
-                    onClick={props.onClick} 
-                    style={buttonStyle} 
-                    disabled={props.disabled} 
-                    variant={props.variant}>
-                    {props.text}
-                </Button>
+                {props.text}
             </div>
         </OverlayTrigger>
     );

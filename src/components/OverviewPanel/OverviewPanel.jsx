@@ -2,10 +2,12 @@ import React from 'react'
 import styled from 'styled-components';
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
-import Button from 'react-bootstrap/Button';
 import { ActionType } from '../ActionType';
 import PopupButton from '../PopupButton';
+import PopupDiv from '../PopupDiv';
 import { formatPrice } from '../../functions/formatPrice';
+import { profitMessage } from '../../functions/ProfitMessage';
+import { nobodyLooking, pryingEyes } from '../../functions/StringTable';
 
 const Td = styled.td`
     border: 2px solid #cccccc;
@@ -47,14 +49,28 @@ export default function OverviewPanel(props) {
         props.handleAction(ActionType.Help);
     }
 
-    const netBalance = `${props.showBalance ? "$" + formatPrice(props.netBalance, 2) : " -"}`;
-    const totalDeposits = `${props.showBalance ? "Not coded yet" : " -"}`;;
+    const handleReset = (event) => {
+        event.preventDefault();
+        props.handleAction(ActionType.Reset);
+    }
+
+
+    const profit = props.netBalance - props.totalDeposits;
+    const profitLossClass = profit >= 0 ? "price-profit" : "price-loss"
+    const arrowCharacter = profit >= 0 ? "▲" : "▼";
+
+    const netBalance = `${props.showBalance ? "$" + formatPrice(props.netBalance, 2) : arrowCharacter}`;
+    const totalDeposits = `${props.showBalance ? "$" + formatPrice(props.totalDeposits, 2) : "-"}`;
     const feeRate = `${props.feeRate*100}%`;
-    const feesCollected = `${props.showBalance ? "$" + formatPrice(props.feesCollected, 2) : " -"}`;
+    const feesCollected = `${props.showBalance ? "$" + formatPrice(props.feesCollected, 2) : "-"}`;
     
     const showHideBalanceText = props.showBalance ? 'Hide Balance' : 'Show Balance';
+    const showHideBalancePopup = props.showBalance ? pryingEyes : nobodyLooking;
     const showHideBalanceVariant = (props.showBalance ? 'warning' : 'info');
-    const cashAvailable = `${props.showBalance ? "$" + formatPrice(props.cashAvailable, 2) : " -"}`;
+    const cashAvailable = `${props.showBalance ? "$" + formatPrice(props.cashAvailable, 2) : "-"}`;
+    const withdrawEnabled = props.cashAvailable >= 1000;
+    const withdrawPopupText = withdrawEnabled ? "Withdraw $1000" : "Insufficient funds available to withdraw $1000";
+    const netBalancePopupMessage = profitMessage(props.showBalance, profit);
 
     return (
         <div>
@@ -71,7 +87,14 @@ export default function OverviewPanel(props) {
                 <tbody>
                     <tr>
                         <Td>{totalDeposits}</Td>
-                        <Td>{netBalance}</Td>
+                        <Td>
+                            <div className={profitLossClass}>
+                                <PopupDiv
+                                    popup={netBalancePopupMessage}
+                                    text={netBalance}
+                                    disabled={false} />
+                            </div>
+                        </Td>
                         <Td>{cashAvailable}</Td>
                         <Td>{feeRate}</Td>
                         <Td>{feesCollected}</Td>
@@ -80,21 +103,59 @@ export default function OverviewPanel(props) {
             </table>
             <div className="button-toolbar-actions" >
                 <ButtonToolbar aria-label="Toolbar with button groups">
-                <ButtonGroup className="me-2" aria-label="First group">
-                    <Button variant={showHideBalanceVariant} onClick={handleShowHideBalance} >{showHideBalanceText}</Button>
+                <ButtonGroup className="me-2" aria-label="Show-Hide group">
+                    <PopupButton
+                        disabled={false} 
+                        variant={showHideBalanceVariant}
+                        popup={showHideBalancePopup}
+                        text={showHideBalanceText}
+                        onClick={handleShowHideBalance} />
                 </ButtonGroup>
-                <ButtonGroup className="me-2" aria-label="Second group">
-                    <Button variant="secondary" onClick={handleSettings} >Settings</Button>
-                    </ButtonGroup>
-                <ButtonGroup className="me-2" aria-label="Third group">
-                    <Button variant="success" onClick={handleClickDeposit} >Deposit</Button>
-                    <Button variant="danger" onClick={handleClickWithdraw} >Withdraw</Button>
+                <ButtonGroup className="me-2" aria-label="Reset group">
+                    <PopupButton
+                        disabled={false} 
+                        variant="danger"
+                        popup="Reset all deposits and purchases"
+                        text="Reset"
+                        onClick={handleReset} />
                 </ButtonGroup>
-                <ButtonGroup className="me-2" aria-label="Fourth group">
-                    <Button variant="success" onClick={handleClickBuyNew} >Buy</Button>
+                <ButtonGroup className="me-2" aria-label="Preferences group">
+                    <PopupButton
+                        disabled={false} 
+                        variant="secondary"
+                        popup="Adjust application preferences"
+                        text="Settings"
+                        onClick={handleSettings} />
                 </ButtonGroup>
-                <ButtonGroup className="me-2" aria-label="Fifth group">
-                    <Button variant="info" onClick={handleClickHelp} >Help</Button>
+                <ButtonGroup className="me-2" aria-label="Deposit-Withdraw group">
+                    <PopupButton
+                        disabled={false} 
+                        variant="success"
+                        popup="Deposit $1000"
+                        text="Deposit"
+                        onClick={handleClickDeposit} />
+                    <PopupButton
+                        disabled={!withdrawEnabled} 
+                        variant="danger"
+                        popup={withdrawPopupText}
+                        text="Withdraw"
+                        onClick={handleClickWithdraw} />
+                </ButtonGroup>
+                <ButtonGroup className="me-2" aria-label="Buy group">
+                    <PopupButton
+                        disabled={false} 
+                        variant="success"
+                        popup="Purchase coins"
+                        text="Buy"
+                        onClick={handleClickBuyNew} />
+                </ButtonGroup>
+                <ButtonGroup className="me-2" aria-label="Help group">
+                    <PopupButton
+                        disabled={false} 
+                        variant="info"
+                        popup="Get help for using this application"
+                        text="Help"
+                        onClick={handleClickHelp} />
                 </ButtonGroup>
                 </ButtonToolbar>
             </div>

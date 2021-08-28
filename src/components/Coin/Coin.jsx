@@ -1,5 +1,6 @@
 import React from 'react';
 import PopupButton from '../PopupButton';
+import PopupDiv from '../PopupDiv';
 import PropTypes from 'prop-types';
 import { ActionType } from '../ActionType';
 // import styled, { css } from 'styled-components';
@@ -7,6 +8,7 @@ import styled from 'styled-components';
 import { formatPrice } from '../../functions/formatPrice';
 import './Coin.css';
 import { getPriceFromTicker } from '../../functions/CoinTicker'
+import { profitMessage } from '../../functions/ProfitMessage';
 
 const Td = styled.td`
     border: 2px solid #cccccc;
@@ -30,7 +32,9 @@ export default function Coin (props) {
     const basisText = props.showBalance ? '$' + formatPrice(props.costBasis) : '-';
     const buyPopupText = `Buy more ${props.ticker}`;
     const sellPopupText = `Sell your ${props.ticker}`;
+    const balancePopupMessage = profitMessage(props.showBalance, profit);
     // console.log(`Coin: coinTicker: ${JSON.stringify(props)}`);
+
     return (
         <tr className="coin-row">
             <Td>{props.name}</Td>
@@ -40,7 +44,10 @@ export default function Coin (props) {
             <Td>{basisText}</Td>
             <Td>
                 <div className={profitLossClass}>
-                    {balanceText}
+                <PopupDiv
+                    popup={balancePopupMessage}
+                    text={balanceText}
+                    disabled={false} />
                 </div>
             </Td>
             <Td>

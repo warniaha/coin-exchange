@@ -16,7 +16,7 @@ export const resetCoinBalance = () => {
 
 export const saveCoinBalance = (values) => {
   const balances = values.balance.filter(coin => coin && !isNaN(coin.shares) && coin.shares > 0);
-  const balanceJson = JSON.stringify({ balance: balances, cash: values.cash, feesPaid: values.feesPaid });
+  const balanceJson = JSON.stringify({ balance: balances, totalDeposits: values.totalDeposits, cash: values.cash, feesPaid: values.feesPaid });
   localStorage.setItem(coinBalanceFilename, balanceJson);
   console.log(`balances: ${balanceJson}`);
 }
@@ -30,11 +30,13 @@ export const readCoinBalance = (setters) => {
   var balances = [];
   var cash = 0;
   var feesPaid = 0;
+  var totalDeposits = 0;
 
   if (parsedValues !== null) {
     balances = parsedValues.balance ?? [];
     cash = parsedValues.cash ?? 0;
     feesPaid = parsedValues.feesPaid ?? 0;
+    totalDeposits = parsedValues.totalDeposits ?? 0;
   }
   balances = balances.map(coin => {
     // add newly added members
@@ -48,5 +50,6 @@ export const readCoinBalance = (setters) => {
   setters.balance(noNan);
   setters.cash(cash);
   setters.feesPaid(feesPaid);
+  setters.totalDeposits(totalDeposits);
 }
 

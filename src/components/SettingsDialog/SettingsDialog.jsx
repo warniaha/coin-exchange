@@ -13,10 +13,6 @@ export default function SettingsDialog(props) {
         props.handleAction(ActionType.SaveSettings, { feeRate: props.settings.feeRate });
     }
     
-    const onReset = () => {
-        props.handleAction(ActionType.Reset);
-    }
-
     return (
         <Modal
             show={props.show}
@@ -49,13 +45,9 @@ export default function SettingsDialog(props) {
             </div>
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="danger" size="sm"
-                    onClick={onReset}>
-                    Reset
-                </Button>
                 <Button variant="info" size="sm"
                     onClick={onSave}>
-                    Save &amp; Close
+                    Save
                 </Button>
                 <Button variant="info" size="sm"
                     onClick={handleCancel}>
