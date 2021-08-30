@@ -19,6 +19,7 @@ import { LoadingState } from './components/LoadingState';
 import { createCoinBalance, saveCoinBalance, readCoinBalance, resetCoinBalance } from './functions/CoinBalance';
 import { saveSettings, readSettings, resetSettings } from './functions/Settings';
 import { getPriceFromTicker, getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
+import { minutesAsSeconds } from './functions/timeframes';
 
 function App(props) {
   const[totalDeposits, setTotalDeposits] = React.useState(0);
@@ -47,10 +48,6 @@ function App(props) {
   const[alertButtonAcceptText, setAlertButtonAcceptText] = React.useState("");
   const[alertAcceptHandler, setAlertAcceptHandler] = React.useState(undefined);
   const[alertCancelHandler, setAlertCancelHandler] = React.useState(undefined);
-
-  const minutesAsSeconds = (num) => {
-    return num * 60;
-  }
 
   // 1 second timer used for updating the popup text over the refresh buttons
   const [seconds, setSeconds] = React.useState(0);
