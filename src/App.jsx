@@ -53,6 +53,9 @@ function App(props) {
   const [seconds, setSeconds] = React.useState(0);
   const [lastRefresh, setLastRefresh] = React.useState(0);
 
+  const getFeeRate = () => {
+    return feeRate / 100;  // Make the used fees based on a percentage: 1% = 0.01
+  }
   const calculateBalance = React.useCallback((bal = coinBalance, cash = cashAvailable, ticker = coinTicker) => { 
     if (typeof(coinTicker) == "object" &&
       typeof(bal) == "object" &&
@@ -330,7 +333,7 @@ function App(props) {
     }
     const price = getPriceFromTicker(coinTicker, changeCoin.ticker);
     var cost = quantity * price;
-    const sellFees = cost * feeRate;
+    const sellFees = cost * getFeeRate();
     const newCoinBalance = coinBalance.map(coin => {
       if (coin.key === key) {
         const newShares = coin.shares - quantity;
@@ -345,7 +348,10 @@ function App(props) {
     const totalFeesPaid = feeTotal + sellFees;
     setCashAvailable(cash);
     calculateBalance(newCoinBalance, cash);
-    const statusText = `Sold ${quantity / price} shares of ${changeCoin.ticker} collecting $${quantity} paying $${sellFees} in fees`;
+    var statusText = `Sold ${quantity / price} shares of ${changeCoin.ticker} collecting $${quantity}`;
+    if (sellFees) {
+      statusText += ` paying $${sellFees} in fees`;
+    }
     setFeeTotal(totalFeesPaid);
     setStatusBarText(statusText);
     console.log(statusText);
@@ -359,7 +365,7 @@ function App(props) {
       return;
     }
     var newCoinBalance;
-    var buyFees = quantity * feeRate;
+    var buyFees = quantity * getFeeRate();
     var price;
     quantity -= buyFees;
     var purchaseCoin = coinBalance.find(coin => key === coin.key);
@@ -395,7 +401,10 @@ function App(props) {
     setFeeTotal(totalFeesPaid);
     setCashAvailable(cash);
     calculateBalance(newCoinBalance, cash);
-    const statusText = `Purchased ${quantity / price} shares of ${purchaseCoin.ticker} spending $${quantity} paying $${buyFees} in fees`;
+    var statusText = `Purchased ${quantity / price} shares of ${purchaseCoin.ticker} spending $${quantity}`;
+    if (buyFees) {
+      statusText += ` paying $${buyFees} in fees`;
+    }
     setStatusBarText(statusText);
     console.log(statusText);
     setCoinBalance(newCoinBalance);
@@ -444,10 +453,12 @@ function App(props) {
   }
   const onModalBuyValidator = (valueCoin) => {
     const value = Number(valueCoin.quantity);
+    console.log(value);
     const coin = valueCoin.coin;
     setQuantity(value);
-    const amount = (value === undefined ? 0 : Number(value));
-    if (amount <= 0) {
+    const amount = (value === undefined || isNaN(value) ? 0 : Number(value));
+    setQuantity(amount);
+    if (amount <= 0 || isNaN(amount)) {
       setModalStatusMessage(buyMustBeGreaterThanZero);
       setModalTextFieldStatus(false);
     }

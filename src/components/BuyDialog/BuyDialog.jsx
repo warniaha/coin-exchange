@@ -76,7 +76,7 @@ export default function BuyDialog(props) {
                     placeholder="Please enter a dollar amount"
                     decimalsLimit={18}
                     allowNegativeValue="false"
-                    value={props.quantity}
+                    value={isNaN(props.quantity) ? 0 : props.quantity}
                     defaultValue={props.initialValue}
                     prefix={props.prefix}
                     intlConfig={{ locale: 'en-US', currency: 'USD' }}

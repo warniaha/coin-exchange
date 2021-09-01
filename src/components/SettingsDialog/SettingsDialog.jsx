@@ -27,7 +27,7 @@ export default function SettingsDialog(props) {
             <Table className="table table-primary table-borders">
                 <tbody>
                     <tr>
-                        <th>Simulated fees</th>
+                        <th>Fees %</th>
                         <td>
                             <input type="text"
                                 className="form-control" 

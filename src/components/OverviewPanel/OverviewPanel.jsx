@@ -60,7 +60,7 @@ export default function OverviewPanel(props) {
 
     const netBalance = `${props.showBalance ? "$" + formatPrice(props.netBalance, 2) : arrowCharacter}`;
     const totalDeposits = `${props.showBalance ? "$" + formatPrice(props.totalDeposits, 2) : "-"}`;
-    const feeRate = `${props.feeRate*100}%`;
+    const feeRate = `${props.feeRate}%`;
     const feesCollected = `${props.showBalance ? "$" + formatPrice(props.feesCollected, 2) : "-"}`;
     
     const showHideBalanceText = props.showBalance ? 'Hide Balance' : 'Show Balance';

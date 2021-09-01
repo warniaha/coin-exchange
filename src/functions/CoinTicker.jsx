@@ -53,19 +53,25 @@ export const isCoinTickerRefreshNeeded = (coinTicker, lastRefresh) => {
     return false;
 }
 
-const getTickers = async (setCoinTicker) => {
+const getTickers = async (setCoinTicker, setStatusBarText) => {
     const diskBasedCoinTicker = readCoinTicker(null);
-    if (!isCoinTickerRefreshNeeded(diskBasedCoinTicker)) {
+    if (diskBasedCoinTicker && !isCoinTickerRefreshNeeded(diskBasedCoinTicker)) {
+        const bitcoin = diskBasedCoinTicker.find(coin => coin.ticker === 'BTC');
+        var timestamp = new Date(Date.parse(bitcoin.last_updated));
+        setStatusBarText(`Using cached prices, last updated at: ${timestamp.toLocaleString()}`);
         return setCoinTicker(diskBasedCoinTicker);  // ok to use the last one loaded
     }
     return await axios.get('https://api.coinpaprika.com/v1/tickers').catch(function(error) {
+        const bitcoin = diskBasedCoinTicker.find(coin => coin.ticker === 'BTC');
+        var timestamp = new Date(Date.parse(bitcoin.last_updated));
+        setStatusBarText(`Failed to retrieve updated prices, cached prices will be used.  Last update was: ${timestamp.toLocaleString()}`);
         return setCoinTicker(diskBasedCoinTicker);  // failed to connect, use the cached version
     });
 }
 
 export const getCoinTicker = (setCoinTicker, setStatusBarText, calculateBalance) => {
     // console.log(`getCoinTicker getting token list`);
-    getTickers(setCoinTicker).then(listResponse => {
+    getTickers(setCoinTicker, setStatusBarText).then(listResponse => {
         if (listResponse !== undefined) {
             const tickers = uniqueByKeepFirst(listResponse.data, key => key.symbol);
             if (tickers) {

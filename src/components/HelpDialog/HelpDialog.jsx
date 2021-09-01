@@ -11,7 +11,7 @@ import { nobodyLooking, pryingEyes } from '../../functions/StringTable';
 
 export default function HelpDialog(props) {
     const [key, setKey] = React.useState(0);
-    const tabsList = ["deposit", "showBalance", "prices", "buy"];
+    const tabsList = ["deposit", "showBalance", "prices", "buy", "fees"];
 
     const handleShowHideBalance = (event) => {
         event.preventDefault();
@@ -37,6 +37,12 @@ export default function HelpDialog(props) {
     const handleClickBuy = (event) => {
         event.preventDefault();
         props.handleAction(ActionType.BuyNew);
+        props.handleClose();
+    }
+
+    const handleSettings = (event) => {
+        event.preventDefault();
+        props.handleAction(ActionType.Settings);
         props.handleClose();
     }
 
@@ -109,6 +115,19 @@ export default function HelpDialog(props) {
                                     popup="Purchase coins"
                                     text="Buy"
                                     onClick={handleClickBuy} />
+                            </div>
+                        </div>
+                    </Tab>
+                    <Tab eventKey="fees" title="Fees">
+                        <div className="wrap-content" >
+                            <div>You can change the settings to simulate fees on your purchases/sales.  Click the Settings button to change the fees rate.  When you click the Setting button, the help window will close</div>
+                            <div className="right-left-margin">
+                                <PopupButton
+                                    disabled={false} 
+                                    variant="secondary"
+                                    popup="Adjust application preferences"
+                                    text="Settings"
+                                    onClick={handleSettings} />
                             </div>
                         </div>
                     </Tab>
