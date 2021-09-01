@@ -1,5 +1,7 @@
 import { uniqueByKeepFirst } from './uniqueByKeepFirst';
 import axios from 'axios';
+import React from 'react';
+import { minutesAsSeconds } from '../functions/timeframes';
 
 export const createCoinTicker = (coin) => {
     return {
@@ -26,7 +28,7 @@ export const saveCoinTicker = (values) => {
 export const readCoinTicker = (setCoinTicker) => {
     const coins = JSON.parse(localStorage.getItem(coinListFilename));
     // console.log(coins);
-    if (coins)
+    if (coins && setCoinTicker)
         setCoinTicker(coins);
     return coins;
 }
@@ -36,11 +38,28 @@ export const getPriceFromTicker = (coinTicker, ticker) => {
     return coin ? coin.price : "";
 }
 
+export const isCoinTickerRefreshNeeded = (coinTicker, lastRefresh) => {
+    if (!coinTicker)
+      return false;
+    const bitCoin = coinTicker.find(coin => coin.ticker === "BTC");
+    const priceAge = Date.parse(bitCoin.last_updated);
+    // if lastRefresh is undefined, set to 2 minutes - it will use the actual age from the coinTickers for comparasion
+    const lastRefreshSeconds = lastRefresh ? (Date.now() - lastRefresh) / 1000 : minutesAsSeconds(2);
+    const priceAgeSeconds = (Date.now() - priceAge) / 1000;
+    if (lastRefreshSeconds > minutesAsSeconds(1) &&
+      priceAgeSeconds > minutesAsSeconds(5)) {
+      return true;
+    }
+    return false;
+}
+
 const getTickers = async (setCoinTicker) => {
+    const diskBasedCoinTicker = readCoinTicker(null);
+    if (!isCoinTickerRefreshNeeded(diskBasedCoinTicker)) {
+        return setCoinTicker(diskBasedCoinTicker);  // ok to use the last one loaded
+    }
     return await axios.get('https://api.coinpaprika.com/v1/tickers').catch(function(error) {
-        console.log(error);
-        console.log(`getTickers reading old file from computer`);
-        return readCoinTicker(setCoinTicker);
+        return setCoinTicker(diskBasedCoinTicker);  // failed to connect, use the cached version
     });
 }
 

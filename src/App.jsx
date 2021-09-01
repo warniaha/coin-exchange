@@ -18,8 +18,7 @@ import { ActionType } from './components/ActionType';
 import { LoadingState } from './components/LoadingState';
 import { createCoinBalance, saveCoinBalance, readCoinBalance, resetCoinBalance } from './functions/CoinBalance';
 import { saveSettings, readSettings, resetSettings } from './functions/Settings';
-import { getPriceFromTicker, getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
-import { minutesAsSeconds } from './functions/timeframes';
+import { getPriceFromTicker, getCoinTicker, resetCoinTicker, isCoinTickerRefreshNeeded } from './functions/CoinTicker'
 import { calculateCostBasis } from './functions/costBasis';
 
 function App(props) {
@@ -70,29 +69,20 @@ function App(props) {
         setNetBalance(0);
   }, [coinBalance, cashAvailable, coinTicker, netBalance]);
 
+  const isCoinTickerRefreshNeededCallBack = React.useCallback((coinTicker, lastRefresh) => {
+    return isCoinTickerRefreshNeeded(coinTicker, lastRefresh);
+  }, [coinTicker, lastRefresh]);
+  
   React.useEffect(() => {
-    const isRefreshNeeded = () => {
-      if (!coinTicker)
-        return false;
-      const bitCoin = coinTicker.find(coin => coin.ticker === "BTC");
-      const priceAge = Date.parse(bitCoin.last_updated);
-      const lastRefreshSeconds = (Date.now() - lastRefresh) / 1000;
-      const priceAgeSeconds = (Date.now() - priceAge) / 1000;
-      if (lastRefreshSeconds > minutesAsSeconds(1) &&
-        priceAgeSeconds > minutesAsSeconds(5)) {
-        return true;
-      }
-      return false;
-    }
     const interval = setInterval(() => {
     setSeconds(seconds => seconds + 1);
-    if (isRefreshNeeded()) {
+    if (isCoinTickerRefreshNeededCallBack(coinTicker, lastRefresh)) {
       setLastRefresh(Date.now());
       getCoinTicker(setCoinTicker, setStatusBarText, calculateBalance);
     }
   }, 1000);
   return () => clearInterval(interval);
-  }, [seconds, coinTicker, setCoinTicker, lastRefresh, setLastRefresh, setStatusBarText, calculateBalance]);
+  }, [seconds, coinTicker, setCoinTicker, lastRefresh, setLastRefresh, setStatusBarText, calculateBalance, isCoinTickerRefreshNeededCallBack]);
 
   const closeHelpDialog = () => {
     setHelpDialogOpen(false);
