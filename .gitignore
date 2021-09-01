@@ -17,7 +17,9 @@
 .env.development.local
 .env.test.local
 .env.production.local
-.bak
+
+#backup files created by WinMerge
+*.bak
 
 npm-debug.log*
 yarn-debug.log*

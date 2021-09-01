@@ -20,6 +20,7 @@ import { createCoinBalance, saveCoinBalance, readCoinBalance, resetCoinBalance }
 import { saveSettings, readSettings, resetSettings } from './functions/Settings';
 import { getPriceFromTicker, getCoinTicker, resetCoinTicker } from './functions/CoinTicker'
 import { minutesAsSeconds } from './functions/timeframes';
+import { calculateCostBasis } from './functions/costBasis';
 
 function App(props) {
   const[totalDeposits, setTotalDeposits] = React.useState(0);
@@ -340,15 +341,13 @@ function App(props) {
     const price = getPriceFromTicker(coinTicker, changeCoin.ticker);
     var cost = quantity * price;
     const sellFees = cost * feeRate;
-    // cost -= sellFees;
-    // const sellQuantity = cost / price;
     const newCoinBalance = coinBalance.map(coin => {
       if (coin.key === key) {
         const newShares = coin.shares - quantity;
         var newCoin = {...coin};
-        newCoin.costBasis = newShares > 0 ? (((coin.shares * coin.costBasis) - (quantity + sellFees)) / newShares) : 0;
+        newCoin.costBasis = calculateCostBasis(coin.shares, coin.costBasis, -quantity, price);
         newCoin.shares = newShares;
-        return newCoin;
+        return newCoin; // include it even if its zero
       }
       return coin;
     });
@@ -384,7 +383,7 @@ function App(props) {
       purchaseCoin = createCoinBalance(ticker);
       price = getPriceFromTicker(coinTicker, purchaseCoin.ticker);
       purchaseCoin.shares = quantity / price;
-      purchaseCoin.costBasis = price;
+      purchaseCoin.costBasis = calculateCostBasis(0, 0, purchaseCoin.shares, price);
       newCoinBalance = [...coinBalance];
       newCoinBalance.push(purchaseCoin);
     }
@@ -392,9 +391,9 @@ function App(props) {
       price = getPriceFromTicker(coinTicker, purchaseCoin.ticker);
       newCoinBalance = coinBalance.map(coin => {
         if (coin.key === key) {
-          const newShares = quantity / price + coin.shares;
-          coin.costBasis = ((coin.shares * coin.costBasis) + quantity) / newShares;
-          coin.shares = newShares;
+          const newShares = quantity / price;
+          coin.costBasis = calculateCostBasis(coin.shares, coin.costBasis, newShares, price);
+          coin.shares = newShares + coin.shares;
           if (coin.shares === 0)
             return null;
         }
