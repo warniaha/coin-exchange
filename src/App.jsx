@@ -40,6 +40,7 @@ function App(props) {
   const[coinTicker, setCoinTicker] = React.useState(undefined);  // list of coins
   const[quantity, setQuantity] = React.useState(0);     // dialogs quantity
   const[statusBarText, setStatusBarText] = React.useState("Loading...");
+  const[activityLog, setActivityLog] = React.useState([]);
 
   // alert values
   const[showAlert, setShowAlert] = React.useState(false);
@@ -74,7 +75,7 @@ function App(props) {
 
   const isCoinTickerRefreshNeededCallBack = React.useCallback((coinTicker, lastRefresh) => {
     return isCoinTickerRefreshNeeded(coinTicker, lastRefresh);
-  }, [coinTicker, lastRefresh]);
+  }, []);
   
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -82,11 +83,13 @@ function App(props) {
     if (isCoinTickerRefreshNeededCallBack(coinTicker, lastRefresh)) {
       setLastRefresh(Date.now());
       getCoinTicker(setCoinTicker, setStatusBarText, calculateBalance);
+      saveCoinBalance({ balance: coinBalance, totalDeposits: totalDeposits, cash: cashAvailable, feesPaid: feeTotal, activityLog: activityLog });
     }
   }, 1000);
   return () => clearInterval(interval);
-  }, [seconds, coinTicker, setCoinTicker, lastRefresh, setLastRefresh, setStatusBarText, calculateBalance, isCoinTickerRefreshNeededCallBack]);
-
+  }, [seconds, coinTicker, setCoinTicker, lastRefresh, setLastRefresh, setStatusBarText, calculateBalance, isCoinTickerRefreshNeededCallBack, 
+    cashAvailable, feeTotal, coinBalance, activityLog, totalDeposits]);
+//React Hook React.useEffect has missing dependencies: 'cashAvailable', 'coinBalance', 'feeTotal', and 'totalDeposits'. 
   const closeHelpDialog = () => {
     setHelpDialogOpen(false);
   }
@@ -112,7 +115,7 @@ function App(props) {
 
   const onReloadLoadingDialog = () => {
     if (coinBalance === undefined) {
-      readCoinBalance({ balance: setCoinBalance, totalDeposits: setTotalDeposits, cash: setCashAvailable, feesPaid: setFeeTotal });
+      readCoinBalance({ balance: setCoinBalance, totalDeposits: setTotalDeposits, cash: setCashAvailable, feesPaid: setFeeTotal, activityLog: setActivityLog });
       readSettings({ feeRate: setFeeRate });
     }
   }
@@ -131,7 +134,7 @@ function App(props) {
     }
     getCoinTicker(setCoinTicker, setStatusBarText, calculateBalance);
     if (coinBalance === undefined || forcedReset) {
-      readCoinBalance({ balance: setCoinBalance, totalDeposits: setTotalDeposits, cash: setCashAvailable, feesPaid: setFeeTotal });
+      readCoinBalance({ balance: setCoinBalance, totalDeposits: setTotalDeposits, cash: setCashAvailable, feesPaid: setFeeTotal, activityLog: setActivityLog });
     }
     if (feeRate === undefined || forcedReset) {
       readSettings({ feeRate: setFeeRate });
@@ -153,11 +156,13 @@ function App(props) {
     const totalAvailable = cashAvailable + value;
     const deposits = totalDeposits + value;
     setCashAvailable(totalAvailable);
-    saveCoinBalance({ balance: coinBalance, totalDeposits: deposits, cash: totalAvailable, feesPaid: feeTotal });
+    var timestamp = new Date(Date.now());
+    const logEntry = `Depositted $1000 at ${timestamp.toLocaleString()}`;
+    setActivityLog(activityLog => [...activityLog, logEntry]);
+    saveCoinBalance({ balance: coinBalance, totalDeposits: deposits, cash: totalAvailable, feesPaid: feeTotal, activityLog: activityLog });
     calculateBalance(coinBalance, totalAvailable);
     setTotalDeposits(deposits);
-    var timestamp = new Date(Date.now());
-    setStatusBarText(`Depositted $1000 at ${timestamp.toLocaleString()}`)
+    setStatusBarText(logEntry);
   }
 
   const handleWithdraw = async (value) => {
@@ -165,11 +170,13 @@ function App(props) {
       const totalAvailable = cashAvailable - value;
       const deposits = totalDeposits - value;
       setCashAvailable(totalAvailable);
-      saveCoinBalance({ balance: coinBalance, totalDeposits: deposits, cash: totalAvailable, feesPaid: feeTotal });
+      var timestamp = new Date(Date.now());
+      const logEntry = `Withdrew $1000 at ${timestamp.toLocaleString()}`;
+      setActivityLog(activityLog => [...activityLog, logEntry]);
+        saveCoinBalance({ balance: coinBalance, totalDeposits: deposits, cash: totalAvailable, feesPaid: feeTotal, activityLog: activityLog });
       calculateBalance(coinBalance, totalAvailable);
       setTotalDeposits(deposits);
-      var timestamp = new Date(Date.now());
-      setStatusBarText(`Withdrew $1000 at ${timestamp.toLocaleString()}`)
+      setStatusBarText(logEntry);
     }
   }
   
@@ -356,7 +363,8 @@ function App(props) {
     setStatusBarText(statusText);
     console.log(statusText);
     setCoinBalance(newCoinBalance);
-    saveCoinBalance({ balance: newCoinBalance, totalDeposits: totalDeposits, cash: cash, feesPaid: totalFeesPaid });
+    setActivityLog(activityLog => [...activityLog, statusText]);
+  saveCoinBalance({ balance: newCoinBalance, totalDeposits: totalDeposits, cash: cash, feesPaid: totalFeesPaid, activityLog: activityLog });
   }
 
   const buyShares = (key, quantity) => {
@@ -408,7 +416,8 @@ function App(props) {
     setStatusBarText(statusText);
     console.log(statusText);
     setCoinBalance(newCoinBalance);
-    saveCoinBalance({ balance: newCoinBalance, totalDeposits: totalDeposits, cash: cash, feesPaid: totalFeesPaid });
+    setActivityLog(activityLog => [...activityLog, statusText]);
+    saveCoinBalance({ balance: newCoinBalance, totalDeposits: totalDeposits, cash: cash, feesPaid: totalFeesPaid, activityLog: activityLog });
   }
 
   const buyMustBeGreaterThanZero = 'Amount to purchase must be greater than zero';
@@ -453,7 +462,7 @@ function App(props) {
   }
   const onModalBuyValidator = (valueCoin) => {
     const value = Number(valueCoin.quantity);
-    console.log(value);
+    // console.log(value);
     const coin = valueCoin.coin;
     setQuantity(value);
     const amount = (value === undefined || isNaN(value) ? 0 : Number(value));
@@ -482,23 +491,25 @@ function App(props) {
   
   return (
     <div className="App">
-      <ExchangeHeader />
-      <OverviewPanel
-        totalDeposits={totalDeposits}
-        netBalance={netBalance} 
-        feesCollected={feeTotal}
-        feeRate={feeRate}
-        cashAvailable={cashAvailable} 
-        showBalance={showBalance}
-        handleAction={handleAction} />
-      <CoinList
-        coinBalance={coinBalance} 
-        coinTicker={coinTicker}
-        showBalance={showBalance} 
-        handleAction={handleAction} />
-      <div className="status-bar">
-        <div>Status: </div>
-        <div className="status-bar-message">{statusBarText}</div>
+      <div className="display-flex">
+        <ExchangeHeader />
+        <OverviewPanel
+          totalDeposits={totalDeposits}
+          netBalance={netBalance} 
+          feesCollected={feeTotal}
+          feeRate={feeRate}
+          cashAvailable={cashAvailable} 
+          showBalance={showBalance}
+          handleAction={handleAction} />
+        <CoinList
+          coinBalance={coinBalance} 
+          coinTicker={coinTicker}
+          showBalance={showBalance} 
+          handleAction={handleAction} />
+        <div className="status-bar">
+          <div>Status: </div>
+          <div className="status-bar-message">{statusBarText}</div>
+        </div>
       </div>
       <BuyDialog show={isBuyDialogOpen} 
         cashSharesAvailable={cashAvailable} 

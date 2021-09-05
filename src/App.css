@@ -50,6 +50,12 @@ tr td {
   align-items: center;
 }
 
+.display-flex {
+  /* make all elements the same width */
+  display: flex;
+  flex-direction: column;
+}
+
 .wrap-content {
   display: flex;
   flex-direction: row;

@@ -1,6 +1,5 @@
 import { uniqueByKeepFirst } from './uniqueByKeepFirst';
 import axios from 'axios';
-import React from 'react';
 import { minutesAsSeconds } from '../functions/timeframes';
 
 export const createCoinTicker = (coin) => {
