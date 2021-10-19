@@ -70,3 +70,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
 
 ### `npm run deploy` to deploy to homepage defined in package.json "homepage" setting
+
+### `https://warniaha.github.io/coin-exchange/`
+
+Deployed code running on github
