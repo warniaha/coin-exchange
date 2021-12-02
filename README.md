@@ -71,6 +71,6 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 
 ### `npm run deploy` to deploy to homepage defined in package.json "homepage" setting
 
-### `https://warniaha.github.io/coin-exchange/`
+### Deployed code running on github
 
-Deployed code running on github
+`https://warniaha.github.io/coin-exchange/`
